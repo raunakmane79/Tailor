@@ -27,25 +27,27 @@ st.set_page_config(
 st.markdown("""
 <style>
     :root {
-        --bg: #07111f;
-        --bg2: #0b1527;
-        --panel: rgba(255,255,255,0.06);
-        --panel-strong: rgba(255,255,255,0.10);
-        --stroke: rgba(255,255,255,0.10);
-        --text: #f8fafc;
-        --muted: rgba(248,250,252,0.72);
-        --soft: rgba(248,250,252,0.52);
-        --gold: #d4af37;
-        --gold-soft: rgba(212,175,55,0.16);
-        --silver: rgba(255,255,255,0.72);
-        --green: #86efac;
-        --orange: #fdba74;
-        --danger: #fca5a5;
-        --shadow: 0 24px 80px rgba(0,0,0,0.34);
-        --shadow-soft: 0 16px 45px rgba(0,0,0,0.18);
+        --bg: #071018;
+        --bg-2: #0b1420;
+        --panel: #101a28;
+        --panel-2: #0f1724;
+        --panel-3: #131f30;
+        --stroke: rgba(255,255,255,0.08);
+        --stroke-strong: rgba(255,255,255,0.12);
+        --text: #f4f7fb;
+        --muted: #b8c2cf;
+        --soft: #8e9aab;
+        --accent: #7aa2ff;
+        --accent-2: #5b8cff;
+        --success: #2ecc71;
+        --warn: #f59e0b;
+        --danger: #ff5d5d;
+        --shadow: 0 18px 50px rgba(0,0,0,0.28);
+        --shadow-soft: 0 10px 30px rgba(0,0,0,0.18);
         --radius-xl: 28px;
         --radius-lg: 22px;
         --radius-md: 16px;
+        --radius-sm: 12px;
     }
 
     html, body, [class*="css"] {
@@ -55,15 +57,14 @@ st.markdown("""
 
     .stApp {
         background:
-            radial-gradient(circle at 10% 10%, rgba(212,175,55,0.10), transparent 24%),
-            radial-gradient(circle at 90% 0%, rgba(147,197,253,0.10), transparent 26%),
-            radial-gradient(circle at 50% 100%, rgba(168,85,247,0.08), transparent 30%),
-            linear-gradient(180deg, #020817 0%, #07111f 38%, #0b1527 100%);
+            radial-gradient(circle at top left, rgba(90,140,255,0.09), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(75,117,209,0.08), transparent 24%),
+            linear-gradient(180deg, #06101a 0%, #08121d 45%, #0b1420 100%);
     }
 
     .block-container {
-        max-width: 1460px;
-        padding-top: 1.2rem;
+        max-width: 1380px;
+        padding-top: 1.1rem;
         padding-bottom: 3rem;
     }
 
@@ -71,167 +72,155 @@ st.markdown("""
         display: none;
     }
 
-    /* Top brand bar */
+    /* Hide Streamlit default top spacing artifacts a bit */
+    header[data-testid="stHeader"] {
+        background: transparent;
+    }
+
+    /* ---------------- Top bar ---------------- */
     .topbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 1rem;
         margin-bottom: 1rem;
-        padding: 0.8rem 0.2rem 0.4rem 0.2rem;
+        padding: 0.15rem 0.1rem 0.4rem 0.1rem;
     }
 
     .brand {
         display: flex;
         align-items: center;
-        gap: 0.9rem;
+        gap: 0.85rem;
     }
 
     .brand-badge {
-        width: 46px;
-        height: 46px;
+        width: 44px;
+        height: 44px;
         border-radius: 14px;
-        background:
-            linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04)),
-            linear-gradient(135deg, rgba(212,175,55,0.18), rgba(212,175,55,0.04));
-        border: 1px solid rgba(255,255,255,0.12);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.15rem;
+        background: linear-gradient(180deg, #18263a, #101a28);
+        border: 1px solid var(--stroke-strong);
+        color: #ffffff;
+        font-size: 1rem;
+        font-weight: 800;
         box-shadow: var(--shadow-soft);
-        backdrop-filter: blur(16px);
     }
 
     .brand-title {
-        font-size: 1.15rem;
+        font-size: 1.12rem;
         font-weight: 800;
-        letter-spacing: 0.02em;
         color: #ffffff;
+        letter-spacing: 0.01em;
+        line-height: 1.1;
     }
 
     .brand-sub {
         font-size: 0.84rem;
         color: var(--soft);
-        margin-top: 0.1rem;
+        margin-top: 0.15rem;
     }
 
     .topbar-right {
         display: flex;
-        gap: 0.6rem;
+        gap: 0.55rem;
         flex-wrap: wrap;
         justify-content: flex-end;
     }
 
     .status-pill {
-        padding: 0.48rem 0.85rem;
+        padding: 0.48rem 0.78rem;
         border-radius: 999px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        color: rgba(255,255,255,0.84);
-        font-size: 0.82rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--stroke);
+        color: #d8e1ec;
+        font-size: 0.8rem;
         font-weight: 600;
-        backdrop-filter: blur(12px);
     }
 
-    /* Hero */
+    /* ---------------- Hero ---------------- */
     .hero-shell {
         position: relative;
         overflow: hidden;
-        border-radius: 34px;
-        padding: 2.6rem;
-        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 30px;
+        padding: 2.2rem;
+        border: 1px solid var(--stroke);
         background:
-            radial-gradient(circle at 0% 0%, rgba(212,175,55,0.12), transparent 26%),
-            radial-gradient(circle at 100% 0%, rgba(96,165,250,0.12), transparent 22%),
-            linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
-        backdrop-filter: blur(18px);
+            linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
+            linear-gradient(180deg, #0b1524, #0a1320);
         box-shadow: var(--shadow);
-        margin-bottom: 1.35rem;
-    }
-
-    .hero-glow {
-        position: absolute;
-        inset: auto -80px -80px auto;
-        width: 260px;
-        height: 260px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(212,175,55,0.14), transparent 62%);
-        pointer-events: none;
+        margin-bottom: 1.15rem;
     }
 
     .hero-grid {
         display: grid;
-        grid-template-columns: 1.35fr 0.85fr;
-        gap: 1.4rem;
+        grid-template-columns: 1.4fr 0.8fr;
+        gap: 1.2rem;
         align-items: stretch;
     }
 
     .eyebrow {
         display: inline-flex;
         align-items: center;
-        gap: 0.45rem;
-        padding: 0.42rem 0.78rem;
+        gap: 0.4rem;
+        padding: 0.42rem 0.75rem;
         border-radius: 999px;
-        background: rgba(212,175,55,0.10);
-        border: 1px solid rgba(212,175,55,0.18);
-        color: #f6deb0;
-        font-size: 0.82rem;
+        background: rgba(122,162,255,0.10);
+        border: 1px solid rgba(122,162,255,0.18);
+        color: #c9d9ff;
+        font-size: 0.76rem;
         font-weight: 700;
-        margin-bottom: 1rem;
-        letter-spacing: 0.04em;
+        margin-bottom: 0.95rem;
         text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .hero-title {
-        font-size: clamp(2.5rem, 4vw, 4.3rem);
-        line-height: 0.98;
+        font-size: clamp(2.4rem, 4vw, 4rem);
+        line-height: 1.02;
         letter-spacing: -0.045em;
-        margin: 0 0 0.85rem 0;
+        margin: 0 0 0.75rem 0;
         font-weight: 900;
         color: #ffffff;
-        max-width: 780px;
+        max-width: 760px;
     }
 
-    .gold {
-        background: linear-gradient(135deg, #fff4cb 0%, #f2d789 35%, #d4af37 70%, #fff0ba 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .brand-highlight {
+        color: #dbe8ff;
     }
 
     .hero-sub {
-        font-size: 1.04rem;
+        font-size: 1rem;
         line-height: 1.75;
-        color: rgba(255,255,255,0.78);
+        color: #c2ccd8;
         max-width: 760px;
-        margin-bottom: 1.25rem;
+        margin-bottom: 1rem;
     }
 
     .pill-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.65rem;
+        gap: 0.6rem;
         margin-top: 0.3rem;
     }
 
     .pill {
-        padding: 0.58rem 0.88rem;
+        padding: 0.56rem 0.84rem;
         border-radius: 999px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.08);
-        color: rgba(255,255,255,0.92);
-        font-size: 0.88rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--stroke);
+        color: #e9eff8;
+        font-size: 0.85rem;
         font-weight: 600;
-        backdrop-filter: blur(12px);
     }
 
     .hero-stat-panel {
         height: 100%;
-        border-radius: 28px;
-        padding: 1.25rem;
-        background:
-            linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
-        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 24px;
+        padding: 1.2rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--stroke);
         box-shadow: var(--shadow-soft);
         display: flex;
         flex-direction: column;
@@ -239,93 +228,83 @@ st.markdown("""
     }
 
     .hero-stat-kicker {
-        font-size: 0.75rem;
+        font-size: 0.74rem;
         text-transform: uppercase;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.11em;
         font-weight: 800;
-        color: rgba(255,255,255,0.52);
+        color: var(--soft);
+        margin-bottom: 0.45rem;
     }
 
     .hero-stat-big {
-        font-size: 2.8rem;
+        font-size: 2.4rem;
         font-weight: 900;
         letter-spacing: -0.04em;
         color: white;
-        margin: 0.3rem 0 0.15rem 0;
+        margin: 0 0 0.25rem 0;
     }
 
     .hero-stat-copy {
         font-size: 0.95rem;
-        color: rgba(255,255,255,0.74);
+        color: #c0cad6;
         line-height: 1.65;
     }
 
     .mini-metrics {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.8rem;
-        margin-top: 1.2rem;
+        gap: 0.7rem;
+        margin-top: 1rem;
     }
 
     .mini-metric {
-        border-radius: 18px;
-        padding: 0.95rem;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 16px;
+        padding: 0.9rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--stroke);
     }
 
     .mini-metric-label {
-        font-size: 0.75rem;
-        color: rgba(255,255,255,0.58);
+        font-size: 0.72rem;
+        color: var(--soft);
         text-transform: uppercase;
         font-weight: 800;
         letter-spacing: 0.08em;
-        margin-bottom: 0.28rem;
+        margin-bottom: 0.25rem;
     }
 
     .mini-metric-value {
-        font-size: 1.15rem;
+        font-size: 1rem;
         color: white;
         font-weight: 800;
     }
 
-    /* Glass sections */
+    /* ---------------- Section cards ---------------- */
     .section-card {
-        position: relative;
-        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04));
-        border: 1px solid rgba(255,255,255,0.09);
+        background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+        border: 1px solid var(--stroke);
         border-radius: var(--radius-xl);
-        padding: 1.35rem 1.35rem 1.1rem 1.35rem;
+        padding: 1.2rem 1.2rem 1rem 1.2rem;
         box-shadow: var(--shadow-soft);
-        backdrop-filter: blur(16px);
         margin-bottom: 1rem;
-        overflow: hidden;
-    }
-
-    .section-card::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(90deg, rgba(212,175,55,0.07), transparent 24%, transparent 76%, rgba(255,255,255,0.03));
-        pointer-events: none;
     }
 
     .mini-step {
         display: inline-block;
-        padding: 0.38rem 0.68rem;
+        padding: 0.35rem 0.65rem;
         border-radius: 999px;
-        font-size: 0.74rem;
+        font-size: 0.72rem;
         font-weight: 800;
-        background: rgba(212,175,55,0.14);
-        color: #f5df9d;
-        border: 1px solid rgba(212,175,55,0.18);
-        margin-bottom: 0.7rem;
-        letter-spacing: 0.06em;
+        background: rgba(122,162,255,0.10);
+        color: #d6e3ff;
+        border: 1px solid rgba(122,162,255,0.18);
+        margin-bottom: 0.65rem;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
     }
 
     .section-title {
-        font-size: 1.3rem;
+        font-size: 1.22rem;
         font-weight: 800;
         margin-bottom: 0.18rem;
         color: white;
@@ -333,80 +312,96 @@ st.markdown("""
     }
 
     .section-sub {
-        color: rgba(255,255,255,0.70);
+        color: #b8c4d2;
         font-size: 0.95rem;
         margin-bottom: 0;
         line-height: 1.6;
     }
 
-    /* Inputs */
+    /* ---------------- Labels ---------------- */
+    .stFileUploader label,
+    .stTextArea label,
+    .stRadio label,
+    label {
+        color: #f2f6fb !important;
+        font-weight: 700 !important;
+    }
+
+    /* ---------------- File uploader ---------------- */
     div[data-testid="stFileUploader"] {
-        border: 1.5px dashed rgba(255,255,255,0.18);
-        border-radius: 22px;
+        border: 1px dashed rgba(255,255,255,0.14);
+        border-radius: 20px;
         padding: 0.6rem;
-        background: rgba(255,255,255,0.04);
-        backdrop-filter: blur(14px);
+        background: rgba(255,255,255,0.03);
     }
 
     div[data-testid="stFileUploader"] section {
         background: transparent !important;
     }
 
-    div[data-testid="stTextArea"] textarea {
-        border-radius: 20px !important;
+    /* ---------------- Text area FIX ---------------- */
+    div[data-testid="stTextArea"] textarea,
+    .stTextArea textarea {
+        border-radius: 18px !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
-        background: rgba(255,255,255,0.05) !important;
-        color: white !important;
+        background: #f5f7fb !important;
+        color: #101828 !important;
+        -webkit-text-fill-color: #101828 !important;
         padding: 1rem !important;
-        min-height: 240px !important;
+        min-height: 260px !important;
         box-shadow: none !important;
+        font-weight: 500 !important;
+        line-height: 1.6 !important;
+        caret-color: #101828 !important;
     }
 
-    div[data-testid="stTextArea"] textarea::placeholder {
-        color: rgba(255,255,255,0.42) !important;
+    div[data-testid="stTextArea"] textarea::placeholder,
+    .stTextArea textarea::placeholder {
+        color: #667085 !important;
+        opacity: 1 !important;
     }
 
-    label, .stFileUploader label, .stTextArea label {
-        color: rgba(255,255,255,0.92) !important;
-        font-weight: 700 !important;
+    div[data-testid="stTextArea"] textarea:focus,
+    .stTextArea textarea:focus {
+        border: 1px solid rgba(122,162,255,0.55) !important;
+        box-shadow: 0 0 0 3px rgba(122,162,255,0.18) !important;
+        outline: none !important;
     }
 
-    /* Buttons */
+    /* ---------------- Buttons ---------------- */
     .stButton > button,
     .stDownloadButton > button {
         width: 100%;
         border-radius: 16px !important;
-        height: 3rem !important;
+        min-height: 3rem !important;
         font-weight: 800 !important;
         letter-spacing: 0.01em;
         border: 1px solid rgba(255,255,255,0.10) !important;
-        background:
-            linear-gradient(135deg, rgba(212,175,55,0.18), rgba(255,255,255,0.08)) !important;
+        background: linear-gradient(180deg, #1a2434, #141d2b) !important;
         color: white !important;
-        box-shadow: 0 14px 32px rgba(0,0,0,0.18);
-        transition: all 0.2s ease;
+        box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+        transition: all 0.18s ease;
     }
 
     .stButton > button:hover,
     .stDownloadButton > button:hover {
+        border-color: rgba(122,162,255,0.34) !important;
+        background: linear-gradient(180deg, #223048, #182335) !important;
         transform: translateY(-1px);
-        border-color: rgba(212,175,55,0.34) !important;
-        box-shadow: 0 18px 34px rgba(0,0,0,0.22);
     }
 
-    /* Progress */
+    /* ---------------- Progress ---------------- */
     div[data-testid="stProgressBar"] > div > div {
-        background: linear-gradient(90deg, #d4af37, #f4df9b) !important;
+        background: linear-gradient(90deg, #7aa2ff, #5b8cff) !important;
     }
 
-    /* Metrics */
+    /* ---------------- Metrics ---------------- */
     .metric-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
         padding: 1rem;
         border-radius: 22px;
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid var(--stroke);
         box-shadow: var(--shadow-soft);
-        backdrop-filter: blur(12px);
     }
 
     [data-testid="metric-container"] {
@@ -417,7 +412,7 @@ st.markdown("""
     }
 
     [data-testid="metric-container"] label {
-        color: rgba(255,255,255,0.66) !important;
+        color: #9fb0c4 !important;
         font-weight: 700 !important;
         text-transform: uppercase;
         letter-spacing: 0.06em;
@@ -431,15 +426,14 @@ st.markdown("""
         letter-spacing: -0.03em;
     }
 
-    /* Keyword boxes */
+    /* ---------------- Keyword boxes ---------------- */
     .keyword-box {
-        background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.04));
-        border: 1px solid rgba(255,255,255,0.09);
-        border-radius: 24px;
-        padding: 1.1rem;
-        min-height: 240px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--stroke);
+        border-radius: 22px;
+        padding: 1rem;
+        min-height: 220px;
         box-shadow: var(--shadow-soft);
-        backdrop-filter: blur(14px);
     }
 
     .keyword-title {
@@ -452,151 +446,197 @@ st.markdown("""
     .chip-wrap {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.55rem;
+        gap: 0.5rem;
     }
 
     .chip-good {
-        background: rgba(134,239,172,0.12);
-        color: #c8f7d6;
-        border: 1px solid rgba(134,239,172,0.22);
-        padding: 0.45rem 0.72rem;
+        background: rgba(46,204,113,0.12);
+        color: #d1f7df;
+        border: 1px solid rgba(46,204,113,0.24);
+        padding: 0.4rem 0.7rem;
         border-radius: 999px;
         font-size: 0.84rem;
         font-weight: 700;
     }
 
     .chip-missing {
-        background: rgba(251,191,36,0.12);
-        color: #fde7b0;
-        border: 1px solid rgba(251,191,36,0.22);
-        padding: 0.45rem 0.72rem;
+        background: rgba(245,158,11,0.12);
+        color: #fde8bf;
+        border: 1px solid rgba(245,158,11,0.22);
+        padding: 0.4rem 0.7rem;
         border-radius: 999px;
         font-size: 0.84rem;
         font-weight: 700;
     }
 
-    /* Req items */
+    /* ---------------- Requirement items ---------------- */
     .req-item {
-        padding: 0.9rem 1rem;
-        border-radius: 18px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        margin-bottom: 0.65rem;
-        color: rgba(255,255,255,0.84);
+        padding: 0.85rem 1rem;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--stroke);
+        margin-bottom: 0.6rem;
+        color: #d5deea;
         line-height: 1.6;
     }
 
-    /* Suggestion cards */
+    /* ---------------- Suggestion cards ---------------- */
     .suggestion-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 26px;
-        padding: 1.1rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+        border: 1px solid var(--stroke);
+        border-radius: 24px;
+        padding: 1rem;
         margin-bottom: 1rem;
         box-shadow: var(--shadow-soft);
-        backdrop-filter: blur(14px);
     }
 
     .line-label {
-        font-size: 0.76rem;
-        color: rgba(255,255,255,0.52);
+        font-size: 0.78rem;
+        color: #aeb9c7;
         font-weight: 800;
         margin-bottom: 0.45rem;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.07em;
     }
 
     .reason-box {
-        background: rgba(212,175,55,0.10);
-        border: 1px solid rgba(212,175,55,0.18);
-        padding: 0.95rem 1rem;
-        border-radius: 16px;
-        color: rgba(255,255,255,0.86);
+        background: rgba(122,162,255,0.08);
+        border: 1px solid rgba(122,162,255,0.16);
+        padding: 0.9rem 1rem;
+        border-radius: 14px;
+        color: #d7e4ff;
         margin-top: 0.8rem;
-        margin-bottom: 0.95rem;
+        margin-bottom: 0.9rem;
         line-height: 1.6;
     }
 
-    /* Code / expander */
+    /* Code block readability */
     div[data-testid="stCodeBlock"] {
-        border-radius: 18px;
+        border-radius: 16px;
         overflow: hidden;
         border: 1px solid rgba(255,255,255,0.08);
     }
 
+    div[data-testid="stCodeBlock"] pre,
+    div[data-testid="stCodeBlock"] code {
+        white-space: pre-wrap !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
+
     details {
-        background: rgba(255,255,255,0.04);
+        background: rgba(255,255,255,0.03);
         border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 18px;
+        border-radius: 16px;
         padding: 0.35rem 0.7rem;
     }
 
-    /* Download */
+    /* ---------------- RADIO FIX ---------------- */
+    div[data-testid="stRadio"] > div {
+        gap: 0.7rem;
+    }
+
+    div[data-testid="stRadio"] label {
+        color: #eef4fb !important;
+    }
+
+    div[role="radiogroup"] {
+        gap: 0.75rem !important;
+    }
+
+    div[role="radiogroup"] > label {
+        background: #101a28 !important;
+        border: 1px solid rgba(255,255,255,0.10) !important;
+        border-radius: 18px !important;
+        padding: 0.95rem 1rem !important;
+        margin-bottom: 0.7rem !important;
+        transition: all 0.2s ease;
+        display: flex !important;
+        align-items: center !important;
+        min-height: 64px !important;
+    }
+
+    div[role="radiogroup"] > label:hover {
+        border-color: rgba(122,162,255,0.32) !important;
+        background: #142033 !important;
+    }
+
+    div[role="radiogroup"] > label p,
+    div[role="radiogroup"] > label span,
+    div[role="radiogroup"] > label div {
+        color: #eef4fb !important;
+        opacity: 1 !important;
+        font-size: 1rem !important;
+        line-height: 1.55 !important;
+    }
+
+    div[role="radiogroup"] > label[data-baseweb="radio"] {
+        width: 100%;
+    }
+
+    /* More aggressive fix for dim text in options */
+    div[data-testid="stMarkdownContainer"] p {
+        color: inherit;
+    }
+
+    /* ---------------- Download ---------------- */
     .download-card {
-        background:
-            radial-gradient(circle at 0% 0%, rgba(212,175,55,0.10), transparent 20%),
-            linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
         color: white;
-        border-radius: 28px;
-        padding: 1.3rem;
-        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 24px;
+        padding: 1.2rem;
+        border: 1px solid var(--stroke);
         box-shadow: var(--shadow);
-        backdrop-filter: blur(16px);
         margin-top: 1rem;
     }
 
     .download-title {
-        font-size: 1.28rem;
+        font-size: 1.24rem;
         font-weight: 850;
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.28rem;
         color: white;
     }
 
     .download-sub {
-        color: rgba(255,255,255,0.76);
+        color: #bcc8d6;
         margin-bottom: 1rem;
         line-height: 1.65;
     }
 
     .footer-note {
         text-align: center;
-        color: rgba(255,255,255,0.52);
-        margin-top: 1.15rem;
+        color: #91a0b2;
+        margin-top: 1rem;
         font-size: 0.9rem;
     }
 
     .success-banner {
-        padding: 0.92rem 1rem;
-        border-radius: 18px;
-        background: rgba(134,239,172,0.10);
-        border: 1px solid rgba(134,239,172,0.18);
-        color: #d9fbe4;
-        margin-bottom: 0.95rem;
+        padding: 0.9rem 1rem;
+        border-radius: 16px;
+        background: rgba(46,204,113,0.10);
+        border: 1px solid rgba(46,204,113,0.18);
+        color: #d9fbe6;
+        margin-bottom: 0.9rem;
     }
 
-    /* Radio styling help */
-    div[role="radiogroup"] > label {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 15px;
-        padding: 0.72rem 0.82rem;
-        margin-bottom: 0.55rem;
-        transition: all 0.2s ease;
+    /* Alerts improve contrast */
+    div[data-baseweb="notification"] {
+        border-radius: 16px !important;
     }
 
-    div[role="radiogroup"] > label:hover {
-        border-color: rgba(212,175,55,0.22);
-        background: rgba(255,255,255,0.07);
-    }
-
-    /* Responsive */
+    /* ---------------- Responsive ---------------- */
     @media (max-width: 1050px) {
         .hero-grid {
             grid-template-columns: 1fr;
         }
 
         .hero-title {
-            font-size: 2.6rem;
+            font-size: 2.7rem;
+        }
+
+        .topbar {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 </style>
@@ -696,13 +736,13 @@ st.markdown("""
         <div class="brand-badge">✦</div>
         <div>
             <div class="brand-title">Rizzume</div>
-            <div class="brand-sub">Luxury AI resume tailoring for serious applicants</div>
+            <div class="brand-sub">Resume tailoring that looks clean and hits harder</div>
         </div>
     </div>
     <div class="topbar-right">
-        <div class="status-pill">ATS Precision</div>
-        <div class="status-pill">Format Protected</div>
-        <div class="status-pill">DOCX + PDF Ready</div>
+        <div class="status-pill">ATS Match</div>
+        <div class="status-pill">Format Safe</div>
+        <div class="status-pill">DOCX + PDF</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -713,40 +753,36 @@ st.markdown("""
 # ---------------------------------------------------
 st.markdown("""
 <div class="hero-shell">
-    <div class="hero-glow"></div>
     <div class="hero-grid">
         <div>
-            <div class="eyebrow">Elite Resume Tailoring</div>
+            <div class="eyebrow">Smarter Resume Tailoring</div>
             <div class="hero-title">
-                Meet <span class="gold">Rizzume</span><br>
-                Your Resume, But Hotter.
+                <span class="brand-highlight">Rizzume</span><br>
+                Rizz up your recruiter
             </div>
             <div class="hero-sub">
-                Turn a generic resume into a role-specific, ATS-smart, premium application asset.
-                Upload your DOCX, paste the job description, compare keyword gaps, choose rewrites
-                line by line, and export a polished final version without wrecking formatting.
+                Upload your resume, paste the job description, and tailor each line without breaking the format.
+                See keyword gaps, generate cleaner rewrites, and export a sharper final version.
             </div>
             <div class="pill-row">
-                <div class="pill">Line-by-Line Rewrite Control</div>
-                <div class="pill">Missing Keyword Detection</div>
-                <div class="pill">Premium UX</div>
-                <div class="pill">PDF Export</div>
+                <div class="pill">ATS Analysis</div>
+                <div class="pill">Keyword Match</div>
+                <div class="pill">Line Rewrites</div>
+                <div class="pill">Export Ready</div>
             </div>
         </div>
         <div class="hero-stat-panel">
             <div>
-                <div class="hero-stat-kicker">Product Promise</div>
-                <div class="hero-stat-big">Luxury UI</div>
+                <div class="hero-stat-kicker">What it does</div>
+                <div class="hero-stat-big">Tailor faster</div>
                 <div class="hero-stat-copy">
-                    Built to feel like a high-end career product, not a rough internal tool.
-                    Clean glassmorphism, premium contrast, stronger hierarchy, and a sharper
-                    candidate workflow from upload to download.
+                    Compare your resume against the role, see what is missing, and update the lines that matter most without wrecking layout.
                 </div>
             </div>
             <div class="mini-metrics">
                 <div class="mini-metric">
-                    <div class="mini-metric-label">Mode</div>
-                    <div class="mini-metric-value">Professional</div>
+                    <div class="mini-metric-label">Focus</div>
+                    <div class="mini-metric-value">ATS + Clarity</div>
                 </div>
                 <div class="mini-metric">
                     <div class="mini-metric-label">Brand</div>
@@ -781,10 +817,9 @@ st.progress(progress_steps / 4, text=f"Rizzume Workflow: {progress_steps}/4 comp
 st.markdown("""
 <div class="section-card">
     <div class="mini-step">Step 01</div>
-    <div class="section-title">Upload Resume + Paste Job Description</div>
+    <div class="section-title">Upload Resume and Job Description</div>
     <div class="section-sub">
-        Start with your DOCX resume and the full target job description.
-        Rizzume keeps the structure intact while optimizing content.
+        Start with your DOCX resume and the role you want to target.
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -811,7 +846,7 @@ if uploaded_file is not None:
         st.session_state.uploaded_file_signature = current_signature
         reset_state_for_new_file()
         st.markdown(
-            '<div class="success-banner">Resume uploaded successfully. Rizzume is ready to analyze and tailor.</div>',
+            '<div class="success-banner">Resume uploaded successfully. Ready to analyze and tailor.</div>',
             unsafe_allow_html=True
         )
 
@@ -834,9 +869,9 @@ if st.session_state.resume_processor is not None:
 st.markdown("""
 <div class="section-card">
     <div class="mini-step">Step 02</div>
-    <div class="section-title">Run ATS Analysis</div>
+    <div class="section-title">Analyze ATS Match</div>
     <div class="section-sub">
-        Get a clean breakdown of score, keyword coverage, and the strongest requirements before editing anything.
+        See keyword coverage, missing terms, and key requirements before making edits.
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -899,8 +934,10 @@ if st.session_state.ats_analysis:
 
     with kw1:
         present_keywords = ats.get("present_keywords", [])
-        present_html = "".join([f'<span class="chip-good">{kw}</span>' for kw in present_keywords]) \
-            if present_keywords else '<span style="color:rgba(255,255,255,0.52);">No keywords detected.</span>'
+        present_html = "".join(
+            [f'<span class="chip-good">{kw}</span>' for kw in present_keywords]
+        ) if present_keywords else '<span style="color:#9fb0c4;">No keywords detected.</span>'
+
         st.markdown(f"""
         <div class="keyword-box">
             <div class="keyword-title">Present Keywords</div>
@@ -910,8 +947,10 @@ if st.session_state.ats_analysis:
 
     with kw2:
         missing_keywords = ats.get("missing_keywords", [])
-        missing_html = "".join([f'<span class="chip-missing">{kw}</span>' for kw in missing_keywords]) \
-            if missing_keywords else '<span style="color:rgba(255,255,255,0.52);">No missing keywords detected.</span>'
+        missing_html = "".join(
+            [f'<span class="chip-missing">{kw}</span>' for kw in missing_keywords]
+        ) if missing_keywords else '<span style="color:#9fb0c4;">No missing keywords detected.</span>'
+
         st.markdown(f"""
         <div class="keyword-box">
             <div class="keyword-title">Missing Keywords</div>
@@ -961,9 +1000,9 @@ if st.session_state.suggestions:
     st.markdown("""
     <div class="section-card">
         <div class="mini-step">Step 03</div>
-        <div class="section-title">Choose Your Rewrites</div>
+        <div class="section-title">Choose Better Rewrites</div>
         <div class="section-sub">
-            Review each recommendation and pick the best option. Only your selected changes will be applied.
+            Review suggestions line by line and keep only the changes you want.
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -988,7 +1027,7 @@ if st.session_state.suggestions:
 
         if reason:
             st.markdown(
-                f'<div class="reason-box"><strong>Why Rizzume flagged this:</strong> {reason}</div>',
+                f'<div class="reason-box"><strong>Why this was flagged:</strong> {reason}</div>',
                 unsafe_allow_html=True
             )
 
@@ -1042,9 +1081,9 @@ if st.session_state.suggestions:
 # ---------------------------------------------------
 if st.session_state.resume_processor is not None:
     st.markdown('<div class="download-card">', unsafe_allow_html=True)
-    st.markdown('<div class="download-title">Export Your Final Rizzume</div>', unsafe_allow_html=True)
+    st.markdown('<div class="download-title">Download Your Final Resume</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="download-sub">Download the tailored DOCX instantly, then generate a PDF once everything looks perfect.</div>',
+        '<div class="download-sub">Export your tailored DOCX, then generate a PDF once everything looks right.</div>',
         unsafe_allow_html=True
     )
 
@@ -1056,7 +1095,7 @@ if st.session_state.resume_processor is not None:
 
     file_stem = get_file_stem(st.session_state.uploaded_filename or "resume.docx")
 
-    d1, d2, d3 = st.columns([1, 1, 1.3], gap="large")
+    d1, d2, d3 = st.columns([1, 1, 1.2], gap="large")
 
     with d1:
         st.download_button(
@@ -1092,6 +1131,6 @@ if st.session_state.resume_processor is not None:
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(
-    '<div class="footer-note">Rizzume — premium resume tailoring with formatting protection.</div>',
+    '<div class="footer-note">Rizzume — tailor faster, keep formatting, apply smarter.</div>',
     unsafe_allow_html=True
 )
