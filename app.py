@@ -1,5 +1,5 @@
-import io
 import os
+import json
 import tempfile
 import subprocess
 from pathlib import Path
@@ -20,8 +20,63 @@ st.set_page_config(
 st.title("Resume Tailor AI")
 st.caption("ATS-Optimized · Format-Safe · Gemini-Powered · PDF Export")
 
+
 # -----------------------------
-# Secrets / API key
+# Helpers
+# -----------------------------
+def get_file_stem(filename: str) -> str:
+    return Path(filename).stem if filename else "tailored_resume"
+
+
+def reset_state_for_new_file():
+    st.session_state.ats_analysis = None
+    st.session_state.suggestions = []
+    st.session_state.choices_made = {}
+    st.session_state.pdf_bytes = None
+    st.session_state.tailored_docx_bytes = None
+
+
+def convert_docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
+    """
+    Convert DOCX bytes to PDF bytes using LibreOffice (soffice).
+    Works well on Linux/Streamlit deployments if LibreOffice is installed.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        input_docx = os.path.join(tmpdir, "resume.docx")
+        output_pdf = os.path.join(tmpdir, "resume.pdf")
+
+        with open(input_docx, "wb") as f:
+            f.write(docx_bytes)
+
+        result = subprocess.run(
+            [
+                "soffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                input_docx,
+                "--outdir",
+                tmpdir,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"LibreOffice conversion failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+            )
+
+        if not os.path.exists(output_pdf):
+            raise RuntimeError("PDF file was not created.")
+
+        with open(output_pdf, "rb") as f:
+            return f.read()
+
+
+# -----------------------------
+# Secrets / Gemini setup
 # -----------------------------
 try:
     GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
@@ -30,6 +85,7 @@ except Exception:
     st.stop()
 
 client = GeminiClient(GEMINI_API_KEY)
+
 
 # -----------------------------
 # Session state
@@ -42,80 +98,27 @@ if "suggestions" not in st.session_state:
     st.session_state.suggestions = []
 if "choices_made" not in st.session_state:
     st.session_state.choices_made = {}
-if "original_filename" not in st.session_state:
-    st.session_state.original_filename = "resume.docx"
+if "pdf_bytes" not in st.session_state:
+    st.session_state.pdf_bytes = None
 if "tailored_docx_bytes" not in st.session_state:
     st.session_state.tailored_docx_bytes = None
+if "uploaded_filename" not in st.session_state:
+    st.session_state.uploaded_filename = "resume.docx"
 
 
 # -----------------------------
-# Helpers
-# -----------------------------
-def base_name_without_ext(filename: str) -> str:
-    return Path(filename).stem or "tailored_resume"
-
-
-def convert_docx_bytes_to_pdf_bytes(docx_bytes: bytes) -> bytes:
-    """
-    Convert DOCX bytes to PDF bytes using LibreOffice (soffice).
-    Requires soffice to be installed in the runtime environment.
-    """
-    with tempfile.TemporaryDirectory() as tmpdir:
-        input_path = os.path.join(tmpdir, "resume.docx")
-        output_path = os.path.join(tmpdir, "resume.pdf")
-
-        with open(input_path, "wb") as f:
-            f.write(docx_bytes)
-
-        # LibreOffice / soffice headless conversion
-        cmd = [
-            "soffice",
-            "--headless",
-            "--convert-to",
-            "pdf",
-            "--outdir",
-            tmpdir,
-            input_path,
-        ]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"PDF conversion failed.\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
-            )
-
-        if not os.path.exists(output_path):
-            raise RuntimeError("PDF conversion failed: output PDF was not created.")
-
-        with open(output_path, "rb") as f:
-            return f.read()
-
-
-def reset_tailoring_state():
-    st.session_state.ats_analysis = None
-    st.session_state.suggestions = []
-    st.session_state.choices_made = {}
-    st.session_state.tailored_docx_bytes = None
-
-
-# -----------------------------
-# Upload
+# Upload section
 # -----------------------------
 uploaded_file = st.file_uploader("Upload your resume (.docx only)", type=["docx"])
 job_description = st.text_area("Paste Job Description", height=250)
 
-if uploaded_file:
+if uploaded_file is not None:
     file_bytes = uploaded_file.read()
     st.session_state.resume_processor = ResumeProcessor(file_bytes)
-    st.session_state.original_filename = uploaded_file.name
-    reset_tailoring_state()
+    st.session_state.uploaded_filename = uploaded_file.name
+    reset_state_for_new_file()
     st.success("Resume uploaded successfully.")
+
 
 # -----------------------------
 # Preview extracted lines
@@ -126,6 +129,7 @@ if st.session_state.resume_processor:
         for line in lines:
             if line["text"].strip():
                 st.write(f'[{line["index"]}] ({line["char_count"]} chars) {line["text"]}')
+
 
 # -----------------------------
 # ATS analysis
@@ -150,8 +154,9 @@ if st.button("Analyze ATS Match"):
 
         st.success("ATS analysis complete.")
 
+
 # -----------------------------
-# Show ATS analysis
+# ATS results
 # -----------------------------
 if st.session_state.ats_analysis:
     ats = st.session_state.ats_analysis
@@ -189,8 +194,9 @@ if st.session_state.ats_analysis:
 
         st.success("Suggestions generated.")
 
+
 # -----------------------------
-# Suggestions / selections
+# Suggestion selection UI
 # -----------------------------
 if st.session_state.suggestions:
     st.subheader("Choose Rewrites")
@@ -203,16 +209,16 @@ if st.session_state.suggestions:
         st.write("Reason:")
         st.write(suggestion.get("reason", ""))
 
-        selected = st.session_state.choices_made.get(i, None)
+        selected = st.session_state.choices_made.get(i)
 
         for opt_idx, option in enumerate(suggestion["options"]):
-            st.button(
+            st.code(option)
+            if st.button(
                 f"Use Option {opt_idx + 1} for line {suggestion['line_index']}",
                 key=f"choice_{i}_{opt_idx}",
-                on_click=lambda idx=i, text=option: st.session_state.choices_made.update({idx: text}),
-            )
-
-            st.code(option)
+            ):
+                st.session_state.choices_made[i] = option
+                st.rerun()
 
         if selected:
             st.success("Selected rewrite:")
@@ -227,21 +233,24 @@ if st.session_state.suggestions:
                 processor.replace_line(suggestion["line_index"], chosen_text)
 
         st.session_state.tailored_docx_bytes = processor.export()
+        st.session_state.pdf_bytes = None
         st.success("Selected changes applied to resume.")
 
+
 # -----------------------------
-# Downloads
+# Download section
 # -----------------------------
 if st.session_state.resume_processor:
     st.markdown("---")
-    st.subheader("Download")
+    st.subheader("Download Your Tailored Resume")
 
-    if st.session_state.tailored_docx_bytes is None:
-        current_docx_bytes = st.session_state.resume_processor.export()
-    else:
-        current_docx_bytes = st.session_state.tailored_docx_bytes
+    current_docx_bytes = (
+        st.session_state.tailored_docx_bytes
+        if st.session_state.tailored_docx_bytes is not None
+        else st.session_state.resume_processor.export()
+    )
 
-    output_basename = base_name_without_ext(st.session_state.original_filename)
+    file_stem = get_file_stem(st.session_state.uploaded_filename)
 
     col_docx, col_pdf = st.columns(2)
 
@@ -249,34 +258,27 @@ if st.session_state.resume_processor:
         st.download_button(
             label="Download DOCX",
             data=current_docx_bytes,
-            file_name=f"{output_basename}_tailored.docx",
+            file_name=f"{file_stem}_tailored.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         )
 
     with col_pdf:
-        if st.button("Prepare PDF"):
-            with st.spinner("Converting DOCX to PDF..."):
+        if st.button("Generate PDF"):
+            with st.spinner("Converting to PDF..."):
                 try:
-                    pdf_bytes = convert_docx_bytes_to_pdf_bytes(current_docx_bytes)
-                    st.session_state["pdf_bytes"] = pdf_bytes
+                    st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx_bytes)
                     st.success("PDF ready.")
                 except Exception as e:
-                    st.error(
-                        "PDF conversion failed. Make sure LibreOffice is installed and "
-                        f"`soffice` is available.\n\nDetails: {e}"
-                    )
+                    st.error(f"PDF conversion failed: {e}")
 
-        if "pdf_bytes" in st.session_state:
+        if st.session_state.pdf_bytes is not None:
             st.download_button(
                 label="Download PDF",
-                data=st.session_state["pdf_bytes"],
-                file_name=f"{output_basename}_tailored.pdf",
+                data=st.session_state.pdf_bytes,
+                file_name=f"{file_stem}_tailored.pdf",
                 mime="application/pdf",
             )
 
-st.markdown(
-    """
-**Deployment note:** PDF export in this app uses LibreOffice (`soffice`) in headless mode.
-If you deploy to Streamlit Community Cloud or another Linux host, make sure LibreOffice is installed there.
-"""
+st.info(
+    "For best formatting, keep uploads in DOCX format and export to PDF only at the end."
 )
