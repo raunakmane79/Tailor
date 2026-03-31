@@ -4,7 +4,7 @@ import re
 import requests
 from typing import List, Dict, Any
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
 class GeminiClient:
     def __init__(self, api_key: str):
