@@ -1,8 +1,9 @@
 import json
 import re
 import requests
+import time
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 
 
 class GeminiClient:
@@ -15,7 +16,7 @@ class GeminiClient:
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": temperature,
-                "maxOutputTokens": 4096,
+                "maxOutputTokens": 3000,
                 "responseMimeType": "application/json",
             },
         }
@@ -24,7 +25,7 @@ class GeminiClient:
             f"{GEMINI_URL}?key={self.api_key}",
             headers=headers,
             json=body,
-            timeout=60,
+            timeout=90,
         )
 
         if response.status_code != 200:
@@ -37,30 +38,131 @@ class GeminiClient:
         except Exception:
             raise RuntimeError(f"Unexpected Gemini response: {data}")
 
+    def _clean_json_text(self, text: str) -> str:
+        cleaned = text.strip()
+        cleaned = re.sub(r"```json|```", "", cleaned).strip()
+
+        # remove control chars except normal whitespace
+        cleaned = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", cleaned)
+
+        return cleaned
+
+    def _balance_json(self, text: str) -> str:
+        """
+        Try to repair truncated JSON by balancing braces/brackets.
+        This will not fix every case, but helps when Gemini cuts off near the end.
+        """
+        stack = []
+        in_string = False
+        escape = False
+
+        for ch in text:
+            if escape:
+                escape = False
+                continue
+
+            if ch == "\\":
+                escape = True
+                continue
+
+            if ch == '"':
+                in_string = not in_string
+                continue
+
+            if in_string:
+                continue
+
+            if ch in "{[":
+                stack.append("}" if ch == "{" else "]")
+            elif ch in "}]":
+                if stack and ch == stack[-1]:
+                    stack.pop()
+
+        if in_string:
+            text += '"'
+
+        while stack:
+            text += stack.pop()
+
+        return text
+
+    def _extract_first_json_block(self, text: str) -> str:
+        """
+        Extract the first top-level JSON object or array from text.
+        """
+        start = None
+        opener = None
+
+        for i, ch in enumerate(text):
+            if ch in "[{":
+                start = i
+                opener = ch
+                break
+
+        if start is None:
+            raise ValueError(f"No JSON found in model response:\n{text}")
+
+        closer = "]" if opener == "[" else "}"
+
+        depth = 0
+        in_string = False
+        escape = False
+
+        for i in range(start, len(text)):
+            ch = text[i]
+
+            if escape:
+                escape = False
+                continue
+
+            if ch == "\\":
+                escape = True
+                continue
+
+            if ch == '"':
+                in_string = not in_string
+                continue
+
+            if in_string:
+                continue
+
+            if ch == opener:
+                depth += 1
+            elif ch == closer:
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+
+        # if incomplete, return from start onward and let balancer try
+        return text[start:]
+
     def _extract_json(self, text: str):
         if not text or not text.strip():
             raise ValueError("Empty model response.")
 
-        cleaned = text.strip()
-        cleaned = re.sub(r"```json|```", "", cleaned).strip()
+        cleaned = self._clean_json_text(text)
 
+        # Attempt 1: direct parse
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
             pass
 
-        match = re.search(r"(\[[\s\S]*\]|\{[\s\S]*\})", cleaned)
-        if not match:
-            raise ValueError(f"No JSON found in model response:\n{cleaned}")
-
-        candidate = match.group(1)
-
-        # remove trailing commas before ] or }
-        candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
-
+        # Attempt 2: extract first block
         try:
+            candidate = self._extract_first_json_block(cleaned)
+            candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
             return json.loads(candidate)
-        except json.JSONDecodeError as e:
+        except Exception:
+            pass
+
+        # Attempt 3: balance truncated JSON
+        try:
+            candidate = self._extract_first_json_block(cleaned)
+            candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
+            candidate = self._balance_json(candidate)
+            return json.loads(candidate)
+        except Exception as e:
             raise ValueError(f"JSON parse failed: {e}\n\nRaw response:\n{cleaned}")
 
     def analyze_ats(self, resume_text: str, job_description: str):
@@ -86,26 +188,30 @@ Rules:
 - Do not invent requirements not stated in the job description
 - missing_keywords should contain important job-specific terms not clearly present in the resume
 - present_keywords should contain terms clearly found in the resume
-- key_requirements should summarize the most important explicit requirements from the job description
+- key_requirements should contain short explicit requirements from the job description
+- Keep arrays concise and relevant
 
 RESUME:
-{resume_text}
+{resume_text[:12000]}
 
 JOB DESCRIPTION:
-{job_description}
+{job_description[:12000]}
 """
         raw = self._call(prompt, temperature=0.2)
         return self._extract_json(raw)
 
-    def generate_suggestions(self, lines, job_description, ats_analysis):
-        missing_keywords = ats_analysis.get("missing_keywords", [])
-        key_requirements = ats_analysis.get("key_requirements", [])
-
-        lines_block = "\n".join(
+    def _build_lines_block(self, lines):
+        return "\n".join(
             f"[{line['index']}] ({line['char_count']} chars) {line['text']}"
             for line in lines
             if line.get("text", "").strip()
         )
+
+    def generate_suggestions(self, lines, job_description, ats_analysis, max_retries=3):
+        missing_keywords = ats_analysis.get("missing_keywords", [])
+        key_requirements = ats_analysis.get("key_requirements", [])
+
+        lines_block = self._build_lines_block(lines)
 
         prompt = f"""
 You are a resume tailoring engine.
@@ -127,10 +233,13 @@ Required output schema:
   }}
 ]
 
-Rules:
+Hard rules:
+- Output MUST be complete valid JSON
+- Do not stop mid-array
+- Escape all quotes properly
 - Select only lines that actually need improvement
-- Return 5 to 12 items max
-- options must always contain exactly 3 strings
+- Return 4 to 8 items max
+- options must contain exactly 3 strings
 - Do not invent fake experience, metrics, tools, dates, roles, achievements, certifications, or technologies
 - Keep each rewrite very close in length to the original
 - Preserve the original meaning unless a small wording improvement is needed
@@ -139,120 +248,139 @@ Rules:
 - Do NOT force keywords where they sound unnatural
 - Only add keywords if they genuinely fit the user's existing experience
 - Keep the same line_index and do not change the order or position of any line
-- Rewrite only the content of that specific line, not surrounding lines
-- Each option should sound like a real human resume bullet, not AI-generated text
+- Rewrite only the content of that specific line
+- Each option should sound natural and human
 - Maintain the same tone and style as the original resume
-- Prefer subtle wording improvements over aggressive rewriting
 - If a keyword cannot fit naturally, leave it out
 - line_index must exactly match one of the provided indices
 - original must exactly match the provided line text for that line_index
 - Do not merge lines
 - Do not split lines
-- Do not rewrite headings unless needed
-- Focus on improving ATS match without making the resume sound unnatural
+- Prefer concise output over many items
 
 Missing keywords:
-{json.dumps(missing_keywords, ensure_ascii=False)}
+{json.dumps(missing_keywords[:15], ensure_ascii=False)}
 
 Key requirements:
-{json.dumps(key_requirements, ensure_ascii=False)}
+{json.dumps(key_requirements[:10], ensure_ascii=False)}
 
 Resume lines:
-{lines_block}
+{lines_block[:12000]}
 
 Job description:
-{job_description[:4000]}
+{job_description[:5000]}
 """
-        raw = self._call(prompt, temperature=0.35)
-        parsed = self._extract_json(raw)
 
-        if not isinstance(parsed, list):
-            raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
+        last_error = None
 
-        line_map = {
-            line["index"]: {
-                "text": line["text"],
-                "char_count": line["char_count"]
-            }
-            for line in lines
-            if isinstance(line, dict) and "index" in line and "text" in line and "char_count" in line
-        }
+        for attempt in range(max_retries):
+            try:
+                raw = self._call(prompt, temperature=0.3)
+                parsed = self._extract_json(raw)
 
-        cleaned = []
+                if not isinstance(parsed, list):
+                    raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
 
-        for item in parsed:
-            if not isinstance(item, dict):
-                continue
+                line_map = {
+                    line["index"]: {
+                        "text": line["text"],
+                        "char_count": line["char_count"]
+                    }
+                    for line in lines
+                    if isinstance(line, dict)
+                    and "index" in line
+                    and "text" in line
+                    and "char_count" in line
+                }
 
-            line_index = item.get("line_index")
-            original = item.get("original")
-            options = item.get("options")
-            reason = item.get("reason", "")
-            keywords_added = item.get("keywords_added", [])
+                cleaned = []
 
-            if not isinstance(line_index, int):
-                continue
+                for item in parsed:
+                    if not isinstance(item, dict):
+                        continue
 
-            if line_index not in line_map:
-                continue
+                    line_index = item.get("line_index")
+                    original = item.get("original")
+                    options = item.get("options")
+                    reason = item.get("reason", "")
+                    keywords_added = item.get("keywords_added", [])
 
-            if not isinstance(original, str):
-                continue
+                    if not isinstance(line_index, int) or line_index not in line_map:
+                        continue
 
-            actual_original = line_map[line_index]["text"]
-            original_len = len(actual_original)
+                    if not isinstance(original, str):
+                        continue
 
-            # original returned by model must match actual line closely
-            if original.strip() != actual_original.strip():
-                continue
+                    actual_original = line_map[line_index]["text"]
+                    original_len = len(actual_original)
 
-            if not isinstance(options, list) or len(options) != 3:
-                continue
+                    if original.strip() != actual_original.strip():
+                        continue
 
-            if not all(isinstance(opt, str) and opt.strip() for opt in options):
-                continue
+                    if not isinstance(options, list) or len(options) != 3:
+                        continue
 
-            valid_options = []
-            seen = set()
+                    if not all(isinstance(opt, str) and opt.strip() for opt in options):
+                        continue
 
-            for opt in options:
-                opt_clean = opt.strip()
+                    valid_options = []
+                    seen = set()
 
-                # avoid duplicate options
-                if opt_clean.lower() in seen:
-                    continue
-                seen.add(opt_clean.lower())
+                    for opt in options:
+                        opt_clean = opt.strip()
 
-                # keep length close to original
-                if abs(len(opt_clean) - original_len) > max(12, int(original_len * 0.25)):
-                    continue
+                        if opt_clean.lower() in seen:
+                            continue
+                        seen.add(opt_clean.lower())
 
-                # prevent exact same line repeated as "suggestion"
-                if opt_clean == actual_original.strip():
-                    continue
+                        if abs(len(opt_clean) - original_len) > max(12, int(original_len * 0.25)):
+                            continue
 
-                valid_options.append(opt_clean)
+                        if opt_clean == actual_original.strip():
+                            continue
 
-            if len(valid_options) != 3:
-                continue
+                        valid_options.append(opt_clean)
 
-            if not isinstance(reason, str):
-                reason = ""
+                    if len(valid_options) != 3:
+                        continue
 
-            if not isinstance(keywords_added, list):
-                keywords_added = []
+                    if not isinstance(reason, str):
+                        reason = ""
 
-            keywords_added = [k for k in keywords_added if isinstance(k, str) and k.strip()]
+                    if not isinstance(keywords_added, list):
+                        keywords_added = []
 
-            cleaned.append({
-                "line_index": line_index,
-                "original": actual_original,
-                "options": valid_options,
-                "reason": reason.strip(),
-                "keywords_added": keywords_added,
-            })
+                    keywords_added = [
+                        k for k in keywords_added
+                        if isinstance(k, str) and k.strip()
+                    ]
 
-        if not cleaned:
-            raise ValueError(f"No valid suggestions could be parsed.\n\nRaw model output:\n{raw}")
+                    cleaned.append({
+                        "line_index": line_index,
+                        "original": actual_original,
+                        "options": valid_options,
+                        "reason": reason.strip(),
+                        "keywords_added": keywords_added,
+                    })
 
-        return cleaned
+                if cleaned:
+                    return cleaned
+
+                raise ValueError("Model returned JSON, but no valid suggestions survived validation.")
+
+            except Exception as e:
+                last_error = e
+                time.sleep(1.2)
+
+        raise ValueError(f"Suggestion generation failed after {max_retries} attempts: {last_error}")
+
+
+def extract_lines_with_counts(resume_text: str):
+    lines = []
+    for idx, line in enumerate(resume_text.splitlines()):
+        lines.append({
+            "index": idx,
+            "text": line,
+            "char_count": len(line)
+        })
+    return lines
