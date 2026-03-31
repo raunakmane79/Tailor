@@ -55,6 +55,7 @@ class GeminiClient:
 
         candidate = match.group(1)
 
+        # remove trailing commas before ] or }
         candidate = re.sub(r",\s*([\]}])", r"\1", candidate)
 
         try:
@@ -78,6 +79,14 @@ Schema:
   "missing_keywords": [],
   "key_requirements": []
 }}
+
+Rules:
+- Analyze the resume against the job description
+- Extract keywords directly from the job description
+- Do not invent requirements not stated in the job description
+- missing_keywords should contain important job-specific terms not clearly present in the resume
+- present_keywords should contain terms clearly found in the resume
+- key_requirements should summarize the most important explicit requirements from the job description
 
 RESUME:
 {resume_text}
@@ -122,50 +131,125 @@ Rules:
 - Select only lines that actually need improvement
 - Return 5 to 12 items max
 - options must always contain exactly 3 strings
-- Do not invent fake experience, metrics, tools, dates, or roles
-- Keep each rewrite close in length to the original
-- Use only keywords that fit naturally
-- line_index must match one of the provided indices
+- Do not invent fake experience, metrics, tools, dates, roles, achievements, certifications, or technologies
+- Keep each rewrite very close in length to the original
+- Preserve the original meaning unless a small wording improvement is needed
+- Keywords must be naturally integrated into the sentence
+- Do NOT keyword stuff
+- Do NOT force keywords where they sound unnatural
+- Only add keywords if they genuinely fit the user's existing experience
+- Keep the same line_index and do not change the order or position of any line
+- Rewrite only the content of that specific line, not surrounding lines
+- Each option should sound like a real human resume bullet, not AI-generated text
+- Maintain the same tone and style as the original resume
+- Prefer subtle wording improvements over aggressive rewriting
+- If a keyword cannot fit naturally, leave it out
+- line_index must exactly match one of the provided indices
+- original must exactly match the provided line text for that line_index
+- Do not merge lines
+- Do not split lines
+- Do not rewrite headings unless needed
+- Focus on improving ATS match without making the resume sound unnatural
 
 Missing keywords:
-{json.dumps(missing_keywords)}
+{json.dumps(missing_keywords, ensure_ascii=False)}
 
 Key requirements:
-{json.dumps(key_requirements)}
+{json.dumps(key_requirements, ensure_ascii=False)}
 
 Resume lines:
 {lines_block}
 
 Job description:
-{job_description[:3000]}
+{job_description[:4000]}
 """
-        raw = self._call(prompt, temperature=0.4)
+        raw = self._call(prompt, temperature=0.35)
         parsed = self._extract_json(raw)
 
         if not isinstance(parsed, list):
             raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
 
+        line_map = {
+            line["index"]: {
+                "text": line["text"],
+                "char_count": line["char_count"]
+            }
+            for line in lines
+            if isinstance(line, dict) and "index" in line and "text" in line and "char_count" in line
+        }
+
         cleaned = []
+
         for item in parsed:
             if not isinstance(item, dict):
                 continue
 
-            if not isinstance(item.get("line_index"), int):
-                continue
-
-            if not isinstance(item.get("original"), str):
-                continue
-
+            line_index = item.get("line_index")
+            original = item.get("original")
             options = item.get("options")
-            if not isinstance(options, list) or len(options) != 3 or not all(isinstance(x, str) for x in options):
+            reason = item.get("reason", "")
+            keywords_added = item.get("keywords_added", [])
+
+            if not isinstance(line_index, int):
                 continue
+
+            if line_index not in line_map:
+                continue
+
+            if not isinstance(original, str):
+                continue
+
+            actual_original = line_map[line_index]["text"]
+            original_len = len(actual_original)
+
+            # original returned by model must match actual line closely
+            if original.strip() != actual_original.strip():
+                continue
+
+            if not isinstance(options, list) or len(options) != 3:
+                continue
+
+            if not all(isinstance(opt, str) and opt.strip() for opt in options):
+                continue
+
+            valid_options = []
+            seen = set()
+
+            for opt in options:
+                opt_clean = opt.strip()
+
+                # avoid duplicate options
+                if opt_clean.lower() in seen:
+                    continue
+                seen.add(opt_clean.lower())
+
+                # keep length close to original
+                if abs(len(opt_clean) - original_len) > max(12, int(original_len * 0.25)):
+                    continue
+
+                # prevent exact same line repeated as "suggestion"
+                if opt_clean == actual_original.strip():
+                    continue
+
+                valid_options.append(opt_clean)
+
+            if len(valid_options) != 3:
+                continue
+
+            if not isinstance(reason, str):
+                reason = ""
+
+            if not isinstance(keywords_added, list):
+                keywords_added = []
+
+            keywords_added = [k for k in keywords_added if isinstance(k, str) and k.strip()]
 
             cleaned.append({
-                "line_index": item["line_index"],
-                "original": item["original"],
-                "options": options,
-                "reason": item.get("reason", ""),
-                "keywords_added": item.get("keywords_added", []),
+                "line_index": line_index,
+                "original": actual_original,
+                "options": valid_options,
+                "reason": reason.strip(),
+                "keywords_added": keywords_added,
             })
 
         if not cleaned:
