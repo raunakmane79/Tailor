@@ -16,7 +16,7 @@ from typing import List, Optional
 from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
-import lxml.etree as etree
+# lxml is used internally by python-docx; no direct import needed
 
 
 @dataclass
