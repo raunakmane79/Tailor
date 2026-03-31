@@ -1,0 +1,92 @@
+# ✦ Resume Tailor AI
+
+A Streamlit app that uses **Google Gemini** to tailor your resume to any job description — with full ATS keyword analysis, format-safe line editing, and a 3-option interactive review for every change.
+
+---
+
+## Features
+
+| Feature | Details |
+|---|---|
+| **ATS Keyword Analysis** | Compares your resume against the JD; shows present vs. missing keywords with a score |
+| **Format-Safe Editing** | Replaces text at the run level — fonts, bold, italic, spacing all preserved |
+| **Character Count Tracking** | Every line shows its char count; replacement options stay within ±30 chars |
+| **3 Options Per Change** | Gemini generates 3 rewrite variants per line; you pick one or skip |
+| **Interactive Review** | Navigate forward/backward through suggestions with a sidebar progress tracker |
+| **One-Click Download** | Download your tailored `.docx` when done |
+
+---
+
+## Setup
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/YOUR_USERNAME/resume-tailor-ai.git
+cd resume-tailor-ai
+```
+
+### 2. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Get a Gemini API Key
+Go to [aistudio.google.com](https://aistudio.google.com/) → Create API Key (free tier available).
+
+### 4. Run the app
+```bash
+streamlit run app.py
+```
+
+The app will open at `http://localhost:8501`. Enter your Gemini API key in the UI (it is never stored anywhere).
+
+---
+
+## How It Works
+
+```
+Upload .docx → Parse lines + char counts
+       ↓
+Paste Job Description
+       ↓
+Gemini analyzes ATS keyword gap (score, present/missing keywords)
+       ↓
+Gemini generates 3 rewrite options for 8-15 key lines
+       ↓
+You review each suggestion: pick Option 1/2/3 or Skip
+       ↓
+App applies changes at the Run level (format preserved)
+       ↓
+Preview changes → Download tailored .docx
+```
+
+---
+
+## Project Structure
+
+```
+resume-tailor-ai/
+├── app.py                  # Streamlit UI (5 steps)
+├── resume_processor.py     # DOCX parsing + format-safe replacement
+├── gemini_client.py        # Gemini API calls (ATS analysis + suggestions)
+├── requirements.txt
+└── README.md
+```
+
+---
+
+## Deploying to Streamlit Cloud
+
+1. Push to GitHub
+2. Go to [share.streamlit.io](https://share.streamlit.io)
+3. Connect your repo, set `app.py` as the entry point
+4. No secrets needed — users enter their own API key in the UI
+
+---
+
+## Notes
+
+- The app **never stores** your resume or API key — everything is in-session memory only
+- Works best with `.docx` resumes that use standard paragraph + table formatting
+- Gemini 1.5 Flash is used (fast + free tier friendly)
+- For best results, paste the full job description including responsibilities and requirements sections
