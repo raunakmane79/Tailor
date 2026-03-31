@@ -1,7 +1,7 @@
 import os
-import json
 import tempfile
 import subprocess
+import shutil
 from pathlib import Path
 
 import streamlit as st
@@ -21,14 +21,11 @@ st.title("Resume Tailor AI")
 st.caption("ATS-Optimized · Format-Safe · Gemini-Powered · PDF Export")
 
 
-# -----------------------------
-# Helpers
-# -----------------------------
 def get_file_stem(filename: str) -> str:
     return Path(filename).stem if filename else "tailored_resume"
 
 
-def reset_state_for_new_file():
+def reset_state_for_new_file() -> None:
     st.session_state.ats_analysis = None
     st.session_state.suggestions = []
     st.session_state.choices_made = {}
@@ -37,10 +34,6 @@ def reset_state_for_new_file():
 
 
 def convert_docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
-    """
-    Convert DOCX bytes to PDF bytes using LibreOffice (soffice).
-    Works well on Linux/Streamlit deployments if LibreOffice is installed.
-    """
     with tempfile.TemporaryDirectory() as tmpdir:
         input_docx = os.path.join(tmpdir, "resume.docx")
         output_pdf = os.path.join(tmpdir, "resume.pdf")
@@ -75,6 +68,9 @@ def convert_docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
             return f.read()
 
 
+SOFFICE_AVAILABLE = shutil.which("soffice") is not None
+
+
 # -----------------------------
 # Secrets / Gemini setup
 # -----------------------------
@@ -90,20 +86,20 @@ client = GeminiClient(GEMINI_API_KEY)
 # -----------------------------
 # Session state
 # -----------------------------
-if "resume_processor" not in st.session_state:
-    st.session_state.resume_processor = None
-if "ats_analysis" not in st.session_state:
-    st.session_state.ats_analysis = None
-if "suggestions" not in st.session_state:
-    st.session_state.suggestions = []
-if "choices_made" not in st.session_state:
-    st.session_state.choices_made = {}
-if "pdf_bytes" not in st.session_state:
-    st.session_state.pdf_bytes = None
-if "tailored_docx_bytes" not in st.session_state:
-    st.session_state.tailored_docx_bytes = None
-if "uploaded_filename" not in st.session_state:
-    st.session_state.uploaded_filename = "resume.docx"
+defaults = {
+    "resume_processor": None,
+    "ats_analysis": None,
+    "suggestions": [],
+    "choices_made": {},
+    "pdf_bytes": None,
+    "tailored_docx_bytes": None,
+    "uploaded_filename": None,
+    "uploaded_file_signature": None,
+}
+
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 
 # -----------------------------
@@ -113,17 +109,21 @@ uploaded_file = st.file_uploader("Upload your resume (.docx only)", type=["docx"
 job_description = st.text_area("Paste Job Description", height=250)
 
 if uploaded_file is not None:
-    file_bytes = uploaded_file.read()
-    st.session_state.resume_processor = ResumeProcessor(file_bytes)
-    st.session_state.uploaded_filename = uploaded_file.name
-    reset_state_for_new_file()
-    st.success("Resume uploaded successfully.")
+    file_bytes = uploaded_file.getvalue()
+    current_signature = (uploaded_file.name, len(file_bytes))
+
+    if st.session_state.uploaded_file_signature != current_signature:
+        st.session_state.resume_processor = ResumeProcessor(file_bytes)
+        st.session_state.uploaded_filename = uploaded_file.name
+        st.session_state.uploaded_file_signature = current_signature
+        reset_state_for_new_file()
+        st.success("Resume uploaded successfully.")
 
 
 # -----------------------------
 # Preview extracted lines
 # -----------------------------
-if st.session_state.resume_processor:
+if st.session_state.resume_processor is not None:
     with st.expander("Preview extracted resume lines"):
         lines = st.session_state.resume_processor.get_all_lines()
         for line in lines:
@@ -135,24 +135,28 @@ if st.session_state.resume_processor:
 # ATS analysis
 # -----------------------------
 if st.button("Analyze ATS Match"):
-    if not st.session_state.resume_processor:
+    if st.session_state.resume_processor is None:
         st.warning("Please upload a resume first.")
     elif not job_description.strip():
         st.warning("Please paste the job description.")
     else:
         resume_text = "\n".join(
-            [
-                line["text"]
-                for line in st.session_state.resume_processor.get_all_lines()
-                if line["text"].strip()
-            ]
+            line["text"]
+            for line in st.session_state.resume_processor.get_all_lines()
+            if line["text"].strip()
         )
 
         with st.spinner("Analyzing ATS match..."):
-            ats_analysis = client.analyze_ats(resume_text, job_description)
-            st.session_state.ats_analysis = ats_analysis
-
-        st.success("ATS analysis complete.")
+            try:
+                ats_analysis = client.analyze_ats(resume_text, job_description)
+                st.session_state.ats_analysis = ats_analysis
+                st.session_state.suggestions = []
+                st.session_state.choices_made = {}
+                st.session_state.tailored_docx_bytes = None
+                st.session_state.pdf_bytes = None
+                st.success("ATS analysis complete.")
+            except Exception as e:
+                st.error(f"ATS analysis failed: {e}")
 
 
 # -----------------------------
@@ -169,30 +173,51 @@ if st.session_state.ats_analysis:
 
     with col1:
         st.markdown("### Present Keywords")
-        for kw in ats.get("present_keywords", []):
-            st.markdown(f"- {kw}")
+        present_keywords = ats.get("present_keywords", [])
+        if present_keywords:
+            for kw in present_keywords:
+                st.markdown(f"- {kw}")
+        else:
+            st.caption("No keywords detected.")
 
     with col2:
         st.markdown("### Missing Keywords")
-        for kw in ats.get("missing_keywords", []):
-            st.markdown(f"- {kw}")
+        missing_keywords = ats.get("missing_keywords", [])
+        if missing_keywords:
+            for kw in missing_keywords:
+                st.markdown(f"- {kw}")
+        else:
+            st.caption("No missing keywords detected.")
 
     st.markdown("### Key Requirements")
-    for req in ats.get("key_requirements", []):
-        st.markdown(f"- {req}")
+    key_requirements = ats.get("key_requirements", [])
+    if key_requirements:
+        for req in key_requirements:
+            st.markdown(f"- {req}")
+    else:
+        st.caption("No key requirements returned.")
 
     if st.button("Generate Tailoring Suggestions"):
         lines = st.session_state.resume_processor.get_all_lines()
 
         with st.spinner("Generating suggestions..."):
-            suggestions = client.generate_suggestions(
-                lines=lines,
-                job_description=job_description,
-                ats_analysis=ats,
-            )
-            st.session_state.suggestions = suggestions
+            try:
+                suggestions = client.generate_suggestions(
+                    lines=lines,
+                    job_description=job_description,
+                    ats_analysis=ats,
+                )
+                st.session_state.suggestions = suggestions
+                st.session_state.choices_made = {}
+                st.session_state.tailored_docx_bytes = None
+                st.session_state.pdf_bytes = None
 
-        st.success("Suggestions generated.")
+                if suggestions:
+                    st.success("Suggestions generated.")
+                else:
+                    st.warning("No suggestions were returned. Try a different job description or resume.")
+            except Exception as e:
+                st.error(f"Suggestion generation failed: {e}")
 
 
 # -----------------------------
@@ -203,20 +228,22 @@ if st.session_state.suggestions:
 
     for i, suggestion in enumerate(st.session_state.suggestions):
         st.markdown("---")
-        st.write(f'**Original line [{suggestion["line_index"]}]**')
-        st.code(suggestion["original"])
+        line_index = suggestion.get("line_index", "Unknown")
+        original = suggestion.get("original", "")
+        options = suggestion.get("options", [])
+        reason = suggestion.get("reason", "")
 
+        st.write(f"**Original line [{line_index}]**")
+        st.code(original)
         st.write("Reason:")
-        st.write(suggestion.get("reason", ""))
+        st.write(reason)
 
         selected = st.session_state.choices_made.get(i)
 
-        for opt_idx, option in enumerate(suggestion["options"]):
+        for opt_idx, option in enumerate(options):
             st.code(option)
-            if st.button(
-                f"Use Option {opt_idx + 1} for line {suggestion['line_index']}",
-                key=f"choice_{i}_{opt_idx}",
-            ):
+            button_text = f"Use Option {opt_idx + 1} for line {line_index}"
+            if st.button(button_text, key=f"choice_{i}_{opt_idx}"):
                 st.session_state.choices_made[i] = option
                 st.rerun()
 
@@ -227,20 +254,26 @@ if st.session_state.suggestions:
     if st.button("Apply Selected Changes"):
         processor = st.session_state.resume_processor
 
-        for i, suggestion in enumerate(st.session_state.suggestions):
-            chosen_text = st.session_state.choices_made.get(i)
-            if chosen_text:
-                processor.replace_line(suggestion["line_index"], chosen_text)
+        if processor is None:
+            st.error("Resume processor not found. Please re-upload your resume.")
+        else:
+            try:
+                for i, suggestion in enumerate(st.session_state.suggestions):
+                    chosen_text = st.session_state.choices_made.get(i)
+                    if chosen_text:
+                        processor.replace_line(suggestion["line_index"], chosen_text)
 
-        st.session_state.tailored_docx_bytes = processor.export()
-        st.session_state.pdf_bytes = None
-        st.success("Selected changes applied to resume.")
+                st.session_state.tailored_docx_bytes = processor.export()
+                st.session_state.pdf_bytes = None
+                st.success("Selected changes applied to resume.")
+            except Exception as e:
+                st.error(f"Applying changes failed: {e}")
 
 
 # -----------------------------
 # Download section
 # -----------------------------
-if st.session_state.resume_processor:
+if st.session_state.resume_processor is not None:
     st.markdown("---")
     st.subheader("Download Your Tailored Resume")
 
@@ -250,7 +283,7 @@ if st.session_state.resume_processor:
         else st.session_state.resume_processor.export()
     )
 
-    file_stem = get_file_stem(st.session_state.uploaded_filename)
+    file_stem = get_file_stem(st.session_state.uploaded_filename or "resume.docx")
 
     col_docx, col_pdf = st.columns(2)
 
@@ -263,22 +296,24 @@ if st.session_state.resume_processor:
         )
 
     with col_pdf:
-        if st.button("Generate PDF"):
-            with st.spinner("Converting to PDF..."):
-                try:
-                    st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx_bytes)
-                    st.success("PDF ready.")
-                except Exception as e:
-                    st.error(f"PDF conversion failed: {e}")
+        if SOFFICE_AVAILABLE:
+            if st.button("Generate PDF"):
+                with st.spinner("Converting to PDF..."):
+                    try:
+                        st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx_bytes)
+                        st.success("PDF ready.")
+                    except Exception as e:
+                        st.error(f"PDF conversion failed: {e}")
 
-        if st.session_state.pdf_bytes is not None:
-            st.download_button(
-                label="Download PDF",
-                data=st.session_state.pdf_bytes,
-                file_name=f"{file_stem}_tailored.pdf",
-                mime="application/pdf",
-            )
+            if st.session_state.pdf_bytes is not None:
+                st.download_button(
+                    label="Download PDF",
+                    data=st.session_state.pdf_bytes,
+                    file_name=f"{file_stem}_tailored.pdf",
+                    mime="application/pdf",
+                )
+        else:
+            st.caption("PDF export is unavailable on this deployment. Download DOCX instead.")
 
-st.info(
-    "For best formatting, keep uploads in DOCX format and export to PDF only at the end."
+st.info("For best formatting, keep uploads in DOCX format and export to PDF only at the end.")
 )
