@@ -316,4 +316,3 @@ if st.session_state.resume_processor is not None:
             st.caption("PDF export is unavailable on this deployment. Download DOCX instead.")
 
 st.info("For best formatting, keep uploads in DOCX format and export to PDF only at the end.")
-)
