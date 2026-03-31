@@ -1,12 +1,13 @@
 from __future__ import annotations
-import io
+
 import copy
+import io
 from dataclasses import dataclass
 from typing import List, Optional
 
 from docx import Document
-from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 
 
 @dataclass
