@@ -22,32 +22,35 @@ st.set_page_config(
 
 
 # ---------------------------------------------------
-# CUSTOM CSS
+# CUSTOM CSS — PREMIUM UI
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
     :root {
-        --bg: #071018;
-        --bg-2: #0b1420;
-        --panel: #101a28;
-        --panel-2: #0f1724;
-        --panel-3: #131f30;
+        --bg: #061019;
+        --bg-2: #091321;
+        --panel: rgba(13, 22, 35, 0.70);
+        --panel-2: rgba(15, 24, 38, 0.78);
+        --panel-3: rgba(18, 30, 46, 0.82);
         --stroke: rgba(255,255,255,0.08);
-        --stroke-strong: rgba(255,255,255,0.12);
-        --text: #f4f7fb;
-        --muted: #b8c2cf;
-        --soft: #8e9aab;
+        --stroke-strong: rgba(255,255,255,0.14);
+        --text: #f5f8fc;
+        --muted: #b6c1cf;
+        --soft: #8b98aa;
         --accent: #7aa2ff;
-        --accent-2: #5b8cff;
+        --accent-2: #5d8dff;
+        --accent-3: #a7c2ff;
         --success: #2ecc71;
         --warn: #f59e0b;
-        --danger: #ff5d5d;
-        --shadow: 0 18px 50px rgba(0,0,0,0.28);
-        --shadow-soft: 0 10px 30px rgba(0,0,0,0.18);
+        --danger: #ff6464;
+        --shadow: 0 24px 70px rgba(0,0,0,0.34);
+        --shadow-soft: 0 16px 40px rgba(0,0,0,0.22);
+        --radius-2xl: 32px;
         --radius-xl: 28px;
         --radius-lg: 22px;
-        --radius-md: 16px;
-        --radius-sm: 12px;
+        --radius-md: 18px;
+        --radius-sm: 14px;
     }
 
     html, body, [class*="css"] {
@@ -57,105 +60,154 @@ st.markdown("""
 
     .stApp {
         background:
-            radial-gradient(circle at top left, rgba(90,140,255,0.09), transparent 28%),
-            radial-gradient(circle at bottom right, rgba(75,117,209,0.08), transparent 24%),
-            linear-gradient(180deg, #06101a 0%, #08121d 45%, #0b1420 100%);
+            radial-gradient(circle at 12% 10%, rgba(122,162,255,0.18), transparent 28%),
+            radial-gradient(circle at 88% 18%, rgba(93,141,255,0.12), transparent 22%),
+            radial-gradient(circle at 80% 88%, rgba(122,162,255,0.10), transparent 24%),
+            linear-gradient(180deg, #050c14 0%, #08111c 38%, #0a1320 100%);
     }
 
     .block-container {
         max-width: 1380px;
-        padding-top: 1.1rem;
+        padding-top: 1.35rem;
         padding-bottom: 3rem;
+    }
+
+    header[data-testid="stHeader"] {
+        background: transparent;
     }
 
     section[data-testid="stSidebar"] {
         display: none;
     }
 
-    /* Hide Streamlit default top spacing artifacts a bit */
-    header[data-testid="stHeader"] {
-        background: transparent;
+    div[data-testid="stToolbar"] {
+        right: 1rem;
+    }
+
+    /* Hide Streamlit menu decoration spacing a bit */
+    [data-testid="collapsedControl"] {
+        display: none;
+    }
+
+    /* Global cards */
+    .glass {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid var(--stroke);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .glass::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top left, rgba(122,162,255,0.10), transparent 30%);
+        pointer-events: none;
     }
 
     /* ---------------- Top bar ---------------- */
     .topbar {
+        position: sticky;
+        top: 0.6rem;
+        z-index: 100;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 1rem;
         margin-bottom: 1rem;
-        padding: 0.15rem 0.1rem 0.4rem 0.1rem;
+        padding: 0.9rem 1rem;
+        border-radius: 22px;
+        background: rgba(8, 14, 24, 0.72);
+        border: 1px solid rgba(255,255,255,0.08);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.18);
     }
 
     .brand {
         display: flex;
         align-items: center;
-        gap: 0.85rem;
+        gap: 0.9rem;
     }
 
     .brand-badge {
-        width: 44px;
-        height: 44px;
-        border-radius: 14px;
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, #18263a, #101a28);
-        border: 1px solid var(--stroke-strong);
-        color: #ffffff;
-        font-size: 1rem;
-        font-weight: 800;
-        box-shadow: var(--shadow-soft);
+        background: linear-gradient(135deg, rgba(122,162,255,0.18), rgba(255,255,255,0.04));
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #fff;
+        font-size: 1.05rem;
+        font-weight: 900;
+        box-shadow: 0 12px 24px rgba(91,140,255,0.14);
     }
 
     .brand-title {
         font-size: 1.12rem;
-        font-weight: 800;
+        font-weight: 900;
         color: #ffffff;
-        letter-spacing: 0.01em;
-        line-height: 1.1;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
     }
 
     .brand-sub {
         font-size: 0.84rem;
         color: var(--soft);
-        margin-top: 0.15rem;
+        margin-top: 0.12rem;
     }
 
     .topbar-right {
         display: flex;
-        gap: 0.55rem;
+        gap: 0.6rem;
         flex-wrap: wrap;
         justify-content: flex-end;
     }
 
     .status-pill {
-        padding: 0.48rem 0.78rem;
+        padding: 0.52rem 0.82rem;
         border-radius: 999px;
         background: rgba(255,255,255,0.04);
-        border: 1px solid var(--stroke);
-        color: #d8e1ec;
-        font-size: 0.8rem;
-        font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #dbe6f3;
+        font-size: 0.79rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
     }
 
     /* ---------------- Hero ---------------- */
     .hero-shell {
         position: relative;
         overflow: hidden;
-        border-radius: 30px;
-        padding: 2.2rem;
+        border-radius: var(--radius-2xl);
+        padding: 2.35rem;
         border: 1px solid var(--stroke);
         background:
-            linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)),
-            linear-gradient(180deg, #0b1524, #0a1320);
+            linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+            linear-gradient(180deg, rgba(10,18,31,0.92), rgba(9,17,28,0.90));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
         box-shadow: var(--shadow);
         margin-bottom: 1.15rem;
     }
 
+    .hero-shell::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 8%, rgba(122,162,255,0.16), transparent 38%);
+        pointer-events: none;
+    }
+
     .hero-grid {
         display: grid;
-        grid-template-columns: 1.4fr 0.8fr;
+        grid-template-columns: 1.45fr 0.8fr;
         gap: 1.2rem;
         align-items: stretch;
     }
@@ -163,37 +215,39 @@ st.markdown("""
     .eyebrow {
         display: inline-flex;
         align-items: center;
-        gap: 0.4rem;
-        padding: 0.42rem 0.75rem;
+        gap: 0.42rem;
+        padding: 0.46rem 0.78rem;
         border-radius: 999px;
         background: rgba(122,162,255,0.10);
         border: 1px solid rgba(122,162,255,0.18);
-        color: #c9d9ff;
+        color: #d7e4ff;
         font-size: 0.76rem;
-        font-weight: 700;
+        font-weight: 800;
         margin-bottom: 0.95rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
     }
 
     .hero-title {
-        font-size: clamp(2.4rem, 4vw, 4rem);
-        line-height: 1.02;
-        letter-spacing: -0.045em;
-        margin: 0 0 0.75rem 0;
-        font-weight: 900;
+        font-size: clamp(2.55rem, 4vw, 4.15rem);
+        line-height: 0.98;
+        letter-spacing: -0.065em;
+        margin: 0 0 0.85rem 0;
+        font-weight: 950;
         color: #ffffff;
         max-width: 760px;
     }
 
     .brand-highlight {
-        color: #dbe8ff;
+        background: linear-gradient(90deg, #7aa2ff, #d7e4ff 68%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .hero-sub {
         font-size: 1rem;
-        line-height: 1.75;
-        color: #c2ccd8;
+        line-height: 1.8;
+        color: #c3cedb;
         max-width: 760px;
         margin-bottom: 1rem;
     }
@@ -202,25 +256,27 @@ st.markdown("""
         display: flex;
         flex-wrap: wrap;
         gap: 0.6rem;
-        margin-top: 0.3rem;
+        margin-top: 0.45rem;
     }
 
     .pill {
-        padding: 0.56rem 0.84rem;
+        padding: 0.58rem 0.88rem;
         border-radius: 999px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid var(--stroke);
-        color: #e9eff8;
-        font-size: 0.85rem;
-        font-weight: 600;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #eef4fb;
+        font-size: 0.84rem;
+        font-weight: 700;
     }
 
     .hero-stat-panel {
         height: 100%;
-        border-radius: 24px;
-        padding: 1.2rem;
-        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-        border: 1px solid var(--stroke);
+        border-radius: 26px;
+        padding: 1.25rem;
+        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border: 1px solid rgba(255,255,255,0.08);
         box-shadow: var(--shadow-soft);
         display: flex;
         flex-direction: column;
@@ -230,38 +286,44 @@ st.markdown("""
     .hero-stat-kicker {
         font-size: 0.74rem;
         text-transform: uppercase;
-        letter-spacing: 0.11em;
+        letter-spacing: 0.12em;
         font-weight: 800;
         color: var(--soft);
         margin-bottom: 0.45rem;
     }
 
     .hero-stat-big {
-        font-size: 2.4rem;
-        font-weight: 900;
-        letter-spacing: -0.04em;
+        font-size: 2.55rem;
+        font-weight: 950;
+        letter-spacing: -0.05em;
         color: white;
         margin: 0 0 0.25rem 0;
     }
 
     .hero-stat-copy {
-        font-size: 0.95rem;
-        color: #c0cad6;
-        line-height: 1.65;
+        font-size: 0.96rem;
+        color: #c6d0dc;
+        line-height: 1.75;
     }
 
     .mini-metrics {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.7rem;
+        gap: 0.75rem;
         margin-top: 1rem;
     }
 
     .mini-metric {
-        border-radius: 16px;
-        padding: 0.9rem;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid var(--stroke);
+        border-radius: 18px;
+        padding: 0.95rem;
+        background: rgba(255,255,255,0.035);
+        border: 1px solid rgba(255,255,255,0.08);
+        transition: all 0.22s ease;
+    }
+
+    .mini-metric:hover {
+        transform: translateY(-2px);
+        border-color: rgba(122,162,255,0.22);
     }
 
     .mini-metric-label {
@@ -280,42 +342,73 @@ st.markdown("""
     }
 
     /* ---------------- Section cards ---------------- */
-    .section-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+    .section-card,
+    .download-card,
+    .metric-card,
+    .keyword-box,
+    .suggestion-card,
+    .empty-card {
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.022));
         border: 1px solid var(--stroke);
         border-radius: var(--radius-xl);
-        padding: 1.2rem 1.2rem 1rem 1.2rem;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         box-shadow: var(--shadow-soft);
+        transition: all 0.22s ease;
+    }
+
+    .section-card:hover,
+    .metric-card:hover,
+    .keyword-box:hover,
+    .suggestion-card:hover,
+    .download-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(122,162,255,0.22);
+        box-shadow: 0 22px 46px rgba(0,0,0,0.24);
+    }
+
+    .section-card,
+    .download-card {
+        padding: 1.55rem;
         margin-bottom: 1rem;
+    }
+
+    .empty-card {
+        padding: 1.35rem;
+        text-align: center;
+        color: #9aa8bb;
+        margin-top: 0.6rem;
     }
 
     .mini-step {
         display: inline-block;
-        padding: 0.35rem 0.65rem;
+        padding: 0.36rem 0.68rem;
         border-radius: 999px;
         font-size: 0.72rem;
         font-weight: 800;
         background: rgba(122,162,255,0.10);
-        color: #d6e3ff;
+        color: #d9e5ff;
         border: 1px solid rgba(122,162,255,0.18);
-        margin-bottom: 0.65rem;
-        letter-spacing: 0.05em;
+        margin-bottom: 0.72rem;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
     }
 
     .section-title {
-        font-size: 1.22rem;
-        font-weight: 800;
-        margin-bottom: 0.18rem;
+        font-size: 1.32rem;
+        font-weight: 900;
+        margin-bottom: 0.22rem;
         color: white;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
     }
 
     .section-sub {
         color: #b8c4d2;
-        font-size: 0.95rem;
+        font-size: 0.96rem;
         margin-bottom: 0;
-        line-height: 1.6;
+        line-height: 1.7;
     }
 
     /* ---------------- Labels ---------------- */
@@ -324,34 +417,35 @@ st.markdown("""
     .stRadio label,
     label {
         color: #f2f6fb !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
     }
 
     /* ---------------- File uploader ---------------- */
     div[data-testid="stFileUploader"] {
         border: 1px dashed rgba(255,255,255,0.14);
-        border-radius: 20px;
-        padding: 0.6rem;
+        border-radius: 22px;
+        padding: 0.7rem;
         background: rgba(255,255,255,0.03);
+        backdrop-filter: blur(14px);
     }
 
     div[data-testid="stFileUploader"] section {
         background: transparent !important;
     }
 
-    /* ---------------- Text area FIX ---------------- */
+    /* ---------------- Text area ---------------- */
     div[data-testid="stTextArea"] textarea,
     .stTextArea textarea {
-        border-radius: 18px !important;
+        border-radius: 20px !important;
         border: 1px solid rgba(255,255,255,0.12) !important;
-        background: #f5f7fb !important;
-        color: #101828 !important;
-        -webkit-text-fill-color: #101828 !important;
+        background: linear-gradient(180deg, #f7f9fc, #f3f6fb) !important;
+        color: #0f1728 !important;
+        -webkit-text-fill-color: #0f1728 !important;
         padding: 1rem !important;
-        min-height: 260px !important;
+        min-height: 280px !important;
         box-shadow: none !important;
         font-weight: 500 !important;
-        line-height: 1.6 !important;
+        line-height: 1.68 !important;
         caret-color: #101828 !important;
     }
 
@@ -364,7 +458,7 @@ st.markdown("""
     div[data-testid="stTextArea"] textarea:focus,
     .stTextArea textarea:focus {
         border: 1px solid rgba(122,162,255,0.55) !important;
-        box-shadow: 0 0 0 3px rgba(122,162,255,0.18) !important;
+        box-shadow: 0 0 0 4px rgba(122,162,255,0.16) !important;
         outline: none !important;
     }
 
@@ -372,36 +466,63 @@ st.markdown("""
     .stButton > button,
     .stDownloadButton > button {
         width: 100%;
-        border-radius: 16px !important;
-        min-height: 3rem !important;
+        border-radius: 18px !important;
+        min-height: 3.1rem !important;
         font-weight: 800 !important;
         letter-spacing: 0.01em;
-        border: 1px solid rgba(255,255,255,0.10) !important;
-        background: linear-gradient(180deg, #1a2434, #141d2b) !important;
+        border: none !important;
+        background: linear-gradient(135deg, #5d8dff, #7aa2ff) !important;
         color: white !important;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+        box-shadow: 0 12px 28px rgba(91,140,255,0.28);
         transition: all 0.18s ease;
     }
 
     .stButton > button:hover,
     .stDownloadButton > button:hover {
-        border-color: rgba(122,162,255,0.34) !important;
-        background: linear-gradient(180deg, #223048, #182335) !important;
-        transform: translateY(-1px);
+        transform: translateY(-2px) scale(1.01);
+        box-shadow: 0 16px 34px rgba(91,140,255,0.42);
+        filter: brightness(1.03);
+    }
+
+    .stButton > button:active,
+    .stDownloadButton > button:active {
+        transform: translateY(0);
+    }
+
+    /* Secondary subtle buttons inside radios / utility actions if any */
+    .ghost-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.72rem 1rem;
+        border-radius: 16px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: white;
+        font-weight: 700;
     }
 
     /* ---------------- Progress ---------------- */
+    div[data-testid="stProgressBar"] {
+        margin-bottom: 1rem;
+    }
+
+    div[data-testid="stProgressBar"] > div {
+        background: rgba(255,255,255,0.08) !important;
+        border-radius: 999px !important;
+        overflow: hidden;
+        height: 12px !important;
+    }
+
     div[data-testid="stProgressBar"] > div > div {
-        background: linear-gradient(90deg, #7aa2ff, #5b8cff) !important;
+        background: linear-gradient(90deg, #7aa2ff, #5d8dff) !important;
+        border-radius: 999px !important;
     }
 
     /* ---------------- Metrics ---------------- */
     .metric-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-        padding: 1rem;
+        padding: 1.1rem;
         border-radius: 22px;
-        border: 1px solid var(--stroke);
-        box-shadow: var(--shadow-soft);
     }
 
     [data-testid="metric-container"] {
@@ -413,31 +534,27 @@ st.markdown("""
 
     [data-testid="metric-container"] label {
         color: #9fb0c4 !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        font-size: 0.72rem !important;
+        letter-spacing: 0.07em;
+        font-size: 0.71rem !important;
     }
 
     [data-testid="metric-container"] [data-testid="stMetricValue"] {
         color: white !important;
         font-size: 2rem !important;
-        font-weight: 900 !important;
-        letter-spacing: -0.03em;
+        font-weight: 950 !important;
+        letter-spacing: -0.04em;
     }
 
     /* ---------------- Keyword boxes ---------------- */
     .keyword-box {
-        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-        border: 1px solid var(--stroke);
-        border-radius: 22px;
         padding: 1rem;
         min-height: 220px;
-        box-shadow: var(--shadow-soft);
     }
 
     .keyword-title {
-        font-weight: 800;
+        font-weight: 850;
         margin-bottom: 0.8rem;
         font-size: 1rem;
         color: white;
@@ -446,52 +563,48 @@ st.markdown("""
     .chip-wrap {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.5rem;
+        gap: 0.52rem;
     }
 
     .chip-good {
         background: rgba(46,204,113,0.12);
-        color: #d1f7df;
+        color: #d7fbe5;
         border: 1px solid rgba(46,204,113,0.24);
-        padding: 0.4rem 0.7rem;
+        padding: 0.42rem 0.72rem;
         border-radius: 999px;
         font-size: 0.84rem;
-        font-weight: 700;
+        font-weight: 800;
     }
 
     .chip-missing {
         background: rgba(245,158,11,0.12);
-        color: #fde8bf;
-        border: 1px solid rgba(245,158,11,0.22);
-        padding: 0.4rem 0.7rem;
+        color: #fdebc6;
+        border: 1px solid rgba(245,158,11,0.24);
+        padding: 0.42rem 0.72rem;
         border-radius: 999px;
         font-size: 0.84rem;
-        font-weight: 700;
+        font-weight: 800;
     }
 
     /* ---------------- Requirement items ---------------- */
     .req-item {
-        padding: 0.85rem 1rem;
+        padding: 0.9rem 1rem;
         border-radius: 16px;
         background: rgba(255,255,255,0.03);
-        border: 1px solid var(--stroke);
-        margin-bottom: 0.6rem;
-        color: #d5deea;
-        line-height: 1.6;
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 0.65rem;
+        color: #dbe4ef;
+        line-height: 1.65;
     }
 
     /* ---------------- Suggestion cards ---------------- */
     .suggestion-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-        border: 1px solid var(--stroke);
-        border-radius: 24px;
-        padding: 1rem;
+        padding: 1.05rem;
         margin-bottom: 1rem;
-        box-shadow: var(--shadow-soft);
     }
 
     .line-label {
-        font-size: 0.78rem;
+        font-size: 0.77rem;
         color: #aeb9c7;
         font-weight: 800;
         margin-bottom: 0.45rem;
@@ -502,19 +615,20 @@ st.markdown("""
     .reason-box {
         background: rgba(122,162,255,0.08);
         border: 1px solid rgba(122,162,255,0.16);
-        padding: 0.9rem 1rem;
-        border-radius: 14px;
+        padding: 0.92rem 1rem;
+        border-radius: 16px;
         color: #d7e4ff;
         margin-top: 0.8rem;
-        margin-bottom: 0.9rem;
-        line-height: 1.6;
+        margin-bottom: 0.95rem;
+        line-height: 1.65;
     }
 
-    /* Code block readability */
+    /* Code blocks */
     div[data-testid="stCodeBlock"] {
         border-radius: 16px;
         overflow: hidden;
         border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(6,10,18,0.95) !important;
     }
 
     div[data-testid="stCodeBlock"] pre,
@@ -522,16 +636,18 @@ st.markdown("""
         white-space: pre-wrap !important;
         word-break: break-word !important;
         overflow-wrap: anywhere !important;
+        font-size: 0.92rem !important;
+        line-height: 1.6 !important;
     }
 
     details {
         background: rgba(255,255,255,0.03);
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 16px;
-        padding: 0.35rem 0.7rem;
+        padding: 0.38rem 0.75rem;
     }
 
-    /* ---------------- RADIO FIX ---------------- */
+    /* ---------------- RADIO ---------------- */
     div[data-testid="stRadio"] > div {
         gap: 0.7rem;
     }
@@ -541,15 +657,15 @@ st.markdown("""
     }
 
     div[role="radiogroup"] {
-        gap: 0.75rem !important;
+        gap: 0.8rem !important;
     }
 
     div[role="radiogroup"] > label {
-        background: #101a28 !important;
+        background: rgba(255,255,255,0.03) !important;
         border: 1px solid rgba(255,255,255,0.10) !important;
         border-radius: 18px !important;
-        padding: 0.95rem 1rem !important;
-        margin-bottom: 0.7rem !important;
+        padding: 0.96rem 1rem !important;
+        margin-bottom: 0.72rem !important;
         transition: all 0.2s ease;
         display: flex !important;
         align-items: center !important;
@@ -558,7 +674,8 @@ st.markdown("""
 
     div[role="radiogroup"] > label:hover {
         border-color: rgba(122,162,255,0.32) !important;
-        background: #142033 !important;
+        background: rgba(122,162,255,0.05) !important;
+        transform: translateY(-1px);
     }
 
     div[role="radiogroup"] > label p,
@@ -574,44 +691,29 @@ st.markdown("""
         width: 100%;
     }
 
-    /* More aggressive fix for dim text in options */
-    div[data-testid="stMarkdownContainer"] p {
-        color: inherit;
+    /* Streamlit messages */
+    div[data-baseweb="notification"] {
+        border-radius: 18px !important;
+        border: 1px solid rgba(255,255,255,0.08) !important;
     }
 
-    /* ---------------- Download ---------------- */
-    .download-card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-        color: white;
-        border-radius: 24px;
-        padding: 1.2rem;
-        border: 1px solid var(--stroke);
-        box-shadow: var(--shadow);
-        margin-top: 1rem;
-    }
-
-    .download-title {
-        font-size: 1.24rem;
-        font-weight: 850;
-        margin-bottom: 0.28rem;
-        color: white;
-    }
-
-    .download-sub {
-        color: #bcc8d6;
-        margin-bottom: 1rem;
-        line-height: 1.65;
+    /* Divider helper */
+    .subtle-divider {
+        height: 1px;
+        width: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+        margin: 0.65rem 0 0.2rem;
     }
 
     .footer-note {
         text-align: center;
         color: #91a0b2;
-        margin-top: 1rem;
+        margin-top: 1.25rem;
         font-size: 0.9rem;
     }
 
     .success-banner {
-        padding: 0.9rem 1rem;
+        padding: 0.95rem 1rem;
         border-radius: 16px;
         background: rgba(46,204,113,0.10);
         border: 1px solid rgba(46,204,113,0.18);
@@ -619,19 +721,13 @@ st.markdown("""
         margin-bottom: 0.9rem;
     }
 
-    /* Alerts improve contrast */
-    div[data-baseweb="notification"] {
-        border-radius: 16px !important;
-    }
-
-    /* ---------------- Responsive ---------------- */
     @media (max-width: 1050px) {
         .hero-grid {
             grid-template-columns: 1fr;
         }
 
         .hero-title {
-            font-size: 2.7rem;
+            font-size: 2.85rem;
         }
 
         .topbar {
@@ -640,7 +736,9 @@ st.markdown("""
         }
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------
@@ -656,6 +754,28 @@ def reset_state_for_new_file() -> None:
     st.session_state.choices_made = {}
     st.session_state.pdf_bytes = None
     st.session_state.tailored_docx_bytes = None
+
+
+def full_reset() -> None:
+    st.session_state.resume_processor = None
+    st.session_state.ats_analysis = None
+    st.session_state.suggestions = []
+    st.session_state.choices_made = {}
+    st.session_state.pdf_bytes = None
+    st.session_state.tailored_docx_bytes = None
+    st.session_state.uploaded_filename = None
+    st.session_state.uploaded_file_signature = None
+
+
+def show_empty_state(message: str) -> None:
+    st.markdown(
+        f"""
+        <div class="empty-card">
+            {message}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def convert_docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
@@ -730,13 +850,14 @@ for key, value in defaults.items():
 # ---------------------------------------------------
 # TOP BAR
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <div class="topbar">
     <div class="brand">
         <div class="brand-badge">✦</div>
         <div>
             <div class="brand-title">Rizzume</div>
-            <div class="brand-sub">Resume tailoring that looks clean and hits harder</div>
+            <div class="brand-sub">Resume tailoring that feels sharp, polished, and recruiter-ready</div>
         </div>
     </div>
     <div class="topbar-right">
@@ -745,13 +866,16 @@ st.markdown("""
         <div class="status-pill">DOCX + PDF</div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------
 # HERO
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <div class="hero-shell">
     <div class="hero-grid">
         <div>
@@ -762,7 +886,7 @@ st.markdown("""
             </div>
             <div class="hero-sub">
                 Upload your resume, paste the job description, and tailor each line without breaking the format.
-                See keyword gaps, generate cleaner rewrites, and export a sharper final version.
+                Spot keyword gaps, generate sharper rewrites, and export a cleaner final version with confidence.
             </div>
             <div class="pill-row">
                 <div class="pill">ATS Analysis</div>
@@ -776,7 +900,7 @@ st.markdown("""
                 <div class="hero-stat-kicker">What it does</div>
                 <div class="hero-stat-big">Tailor faster</div>
                 <div class="hero-stat-copy">
-                    Compare your resume against the role, see what is missing, and update the lines that matter most without wrecking layout.
+                    Compare your resume against the role, find what is missing, and improve only the lines that matter most without destroying layout.
                 </div>
             </div>
             <div class="mini-metrics">
@@ -792,7 +916,9 @@ st.markdown("""
         </div>
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 # ---------------------------------------------------
@@ -814,7 +940,8 @@ st.progress(progress_steps / 4, text=f"Rizzume Workflow: {progress_steps}/4 comp
 # ---------------------------------------------------
 # STEP 1 - INPUTS
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <div class="section-card">
     <div class="mini-step">Step 01</div>
     <div class="section-title">Upload Resume and Job Description</div>
@@ -822,7 +949,9 @@ st.markdown("""
         Start with your DOCX resume and the role you want to target.
     </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 left, right = st.columns([1, 1.35], gap="large")
 
@@ -832,8 +961,8 @@ with left:
 with right:
     job_description = st.text_area(
         "Paste Job Description",
-        height=260,
-        placeholder="Paste the full job description here..."
+        height=280,
+        placeholder="Paste the full job description here...",
     )
 
 if uploaded_file is not None:
@@ -845,10 +974,43 @@ if uploaded_file is not None:
         st.session_state.uploaded_filename = uploaded_file.name
         st.session_state.uploaded_file_signature = current_signature
         reset_state_for_new_file()
+        st.toast("Resume uploaded successfully", icon="✅")
         st.markdown(
             '<div class="success-banner">Resume uploaded successfully. Ready to analyze and tailor.</div>',
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
+
+utility_col1, utility_col2, utility_col3 = st.columns([1, 1, 4], gap="large")
+with utility_col1:
+    if st.button("Analyze ATS Match", use_container_width=True):
+        if st.session_state.resume_processor is None:
+            st.warning("Please upload a resume first.")
+        elif not job_description.strip():
+            st.warning("Please paste the job description.")
+        else:
+            resume_text = "\n".join(
+                line["text"]
+                for line in st.session_state.resume_processor.get_all_lines()
+                if line["text"].strip()
+            )
+            st.toast("Analyzing resume…", icon="⚡")
+            with st.spinner("Analyzing ATS match..."):
+                try:
+                    ats_analysis = client.analyze_ats(resume_text, job_description)
+                    st.session_state.ats_analysis = ats_analysis
+                    st.session_state.suggestions = []
+                    st.session_state.choices_made = {}
+                    st.session_state.tailored_docx_bytes = None
+                    st.session_state.pdf_bytes = None
+                    st.success("ATS analysis complete.")
+                except Exception as e:
+                    st.error(f"ATS analysis failed: {e}")
+
+with utility_col2:
+    if st.button("Reset", use_container_width=True):
+        full_reset()
+        st.toast("Workspace reset", icon="🧹")
+        st.rerun()
 
 
 # ---------------------------------------------------
@@ -866,44 +1028,22 @@ if st.session_state.resume_processor is not None:
 # ---------------------------------------------------
 # STEP 2 - ATS ANALYSIS
 # ---------------------------------------------------
-st.markdown("""
-<div class="section-card">
-    <div class="mini-step">Step 02</div>
-    <div class="section-title">Analyze ATS Match</div>
-    <div class="section-sub">
-        See keyword coverage, missing terms, and key requirements before making edits.
+if st.session_state.resume_processor is not None:
+    st.markdown(
+        """
+    <div class="section-card">
+        <div class="mini-step">Step 02</div>
+        <div class="section-title">Analyze ATS Match</div>
+        <div class="section-sub">
+            See keyword coverage, missing terms, and key requirements before making edits.
+        </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
-analyze_col1, analyze_col2 = st.columns([1, 4], gap="large")
-
-with analyze_col1:
-    analyze_clicked = st.button("Analyze ATS Match", use_container_width=True)
-
-if analyze_clicked:
-    if st.session_state.resume_processor is None:
-        st.warning("Please upload a resume first.")
-    elif not job_description.strip():
-        st.warning("Please paste the job description.")
-    else:
-        resume_text = "\n".join(
-            line["text"]
-            for line in st.session_state.resume_processor.get_all_lines()
-            if line["text"].strip()
-        )
-
-        with st.spinner("Analyzing ATS match..."):
-            try:
-                ats_analysis = client.analyze_ats(resume_text, job_description)
-                st.session_state.ats_analysis = ats_analysis
-                st.session_state.suggestions = []
-                st.session_state.choices_made = {}
-                st.session_state.tailored_docx_bytes = None
-                st.session_state.pdf_bytes = None
-                st.success("ATS analysis complete.")
-            except Exception as e:
-                st.error(f"ATS analysis failed: {e}")
+if not st.session_state.ats_analysis and st.session_state.resume_processor is not None:
+    show_empty_state("Upload your resume and run analysis to unlock ATS score, keyword coverage, and rewrite suggestions ✦")
 
 
 # ---------------------------------------------------
@@ -913,7 +1053,13 @@ if st.session_state.ats_analysis:
     ats = st.session_state.ats_analysis
     ats_score = int(ats.get("ats_score", 0))
 
-    c1, c2, c3 = st.columns(3, gap="large")
+    confidence = "Low"
+    if ats_score >= 80:
+        confidence = "High"
+    elif ats_score >= 60:
+        confidence = "Medium"
+
+    c1, c2, c3, c4 = st.columns(4, gap="large")
     with c1:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("ATS Score", f"{ats_score}%")
@@ -926,6 +1072,10 @@ if st.session_state.ats_analysis:
         st.markdown('<div class="metric-card">', unsafe_allow_html=True)
         st.metric("Missing Keywords", len(ats.get("missing_keywords", [])))
         st.markdown('</div>', unsafe_allow_html=True)
+    with c4:
+        st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+        st.metric("Confidence", confidence)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if ats.get("score_note"):
         st.info(ats.get("score_note"))
@@ -934,29 +1084,39 @@ if st.session_state.ats_analysis:
 
     with kw1:
         present_keywords = ats.get("present_keywords", [])
-        present_html = "".join(
-            [f'<span class="chip-good">{kw}</span>' for kw in present_keywords]
-        ) if present_keywords else '<span style="color:#9fb0c4;">No keywords detected.</span>'
+        present_html = (
+            "".join([f'<span class="chip-good">{kw}</span>' for kw in present_keywords])
+            if present_keywords
+            else '<span style="color:#9fb0c4;">No keywords detected.</span>'
+        )
 
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="keyword-box">
             <div class="keyword-title">Present Keywords</div>
             <div class="chip-wrap">{present_html}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     with kw2:
         missing_keywords = ats.get("missing_keywords", [])
-        missing_html = "".join(
-            [f'<span class="chip-missing">{kw}</span>' for kw in missing_keywords]
-        ) if missing_keywords else '<span style="color:#9fb0c4;">No missing keywords detected.</span>'
+        missing_html = (
+            "".join([f'<span class="chip-missing">{kw}</span>' for kw in missing_keywords])
+            if missing_keywords
+            else '<span style="color:#9fb0c4;">No missing keywords detected.</span>'
+        )
 
-        st.markdown(f"""
+        st.markdown(
+            f"""
         <div class="keyword-box">
             <div class="keyword-title">Missing Keywords</div>
             <div class="chip-wrap">{missing_html}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     st.markdown("### Key Requirements")
     key_requirements = ats.get("key_requirements", [])
@@ -972,7 +1132,7 @@ if st.session_state.ats_analysis:
 
     if generate_clicked:
         lines = st.session_state.resume_processor.get_all_lines()
-
+        st.toast("Generating line rewrites…", icon="✨")
         with st.spinner("Generating suggestions..."):
             try:
                 suggestions = client.generate_suggestions(
@@ -996,8 +1156,12 @@ if st.session_state.ats_analysis:
 # ---------------------------------------------------
 # STEP 3 - SUGGESTION CHOICES
 # ---------------------------------------------------
+if st.session_state.ats_analysis and not st.session_state.suggestions:
+    show_empty_state("Your ATS analysis is ready. Generate suggestions to review line-by-line rewrite options.")
+
 if st.session_state.suggestions:
-    st.markdown("""
+    st.markdown(
+        """
     <div class="section-card">
         <div class="mini-step">Step 03</div>
         <div class="section-title">Choose Better Rewrites</div>
@@ -1005,14 +1169,16 @@ if st.session_state.suggestions:
             Review suggestions line by line and keep only the changes you want.
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     total_suggestions = len(st.session_state.suggestions)
     selected_count = len(st.session_state.choices_made)
 
     st.progress(
         selected_count / total_suggestions if total_suggestions else 0,
-        text=f"Selections made: {selected_count}/{total_suggestions}"
+        text=f"Selections made: {selected_count}/{total_suggestions}",
     )
 
     for i, suggestion in enumerate(st.session_state.suggestions):
@@ -1028,7 +1194,7 @@ if st.session_state.suggestions:
         if reason:
             st.markdown(
                 f'<div class="reason-box"><strong>Why this was flagged:</strong> {reason}</div>',
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         radio_options = ["Keep original"] + options
@@ -1039,7 +1205,7 @@ if st.session_state.suggestions:
             radio_options,
             index=radio_options.index(current_value) if current_value in radio_options else 0,
             key=f"radio_{i}",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         if selected == "Keep original":
@@ -1071,6 +1237,7 @@ if st.session_state.suggestions:
                 st.session_state.resume_processor = processor
                 st.session_state.tailored_docx_bytes = processor.export()
                 st.session_state.pdf_bytes = None
+                st.toast("Changes applied", icon="✅")
                 st.success("Selected changes applied to resume.")
             except Exception as e:
                 st.error(f"Applying changes failed: {e}")
@@ -1083,9 +1250,10 @@ if st.session_state.resume_processor is not None:
     st.markdown('<div class="download-card">', unsafe_allow_html=True)
     st.markdown('<div class="download-title">Download Your Final Resume</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="download-sub">Export your tailored DOCX, then generate a PDF once everything looks right.</div>',
-        unsafe_allow_html=True
+        '<div class="section-sub">Export your tailored DOCX, then generate a PDF once everything looks right.</div>',
+        unsafe_allow_html=True,
     )
+    st.markdown('<div class="subtle-divider"></div>', unsafe_allow_html=True)
 
     current_docx_bytes = (
         st.session_state.tailored_docx_bytes
@@ -1109,6 +1277,7 @@ if st.session_state.resume_processor is not None:
     with d2:
         if SOFFICE_AVAILABLE:
             if st.button("Generate PDF", use_container_width=True):
+                st.toast("Generating PDF…", icon="📄")
                 with st.spinner("Converting to PDF..."):
                     try:
                         st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx_bytes)
@@ -1131,6 +1300,6 @@ if st.session_state.resume_processor is not None:
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown(
-    '<div class="footer-note">Rizzume — tailor faster, keep formatting, apply smarter.</div>',
-    unsafe_allow_html=True
+    '<div class="footer-note">Rizzume — tailor faster, keep formatting, and ship a cleaner application.</div>',
+    unsafe_allow_html=True,
 )
