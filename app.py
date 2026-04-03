@@ -748,7 +748,8 @@ def check_password():
             st.session_state["_auth_fail"] = True
 
     st.markdown('<div class="login-page">', unsafe_allow_html=True)
-    _, center, _ = st.columns([0.9, 1.4, 0.9])
+    _, center, _ = st.columns([1.2, 1, 1.2])
+
     with center:
         st.markdown(
             """
@@ -798,7 +799,9 @@ def check_password():
 
     st.markdown('</div>', unsafe_allow_html=True)
     return False
-    if not check_password():
+
+
+if not check_password():
     st.stop()
 # ---------------------------------------------------
 # REMAINING IMPORTS (only after auth)
