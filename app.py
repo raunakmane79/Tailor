@@ -2,9 +2,7 @@ import os
 import tempfile
 import subprocess
 import shutil
-import base64
-import urllib.parse
-from pathlib import Path
+import re
 
 import streamlit as st
 
@@ -95,7 +93,6 @@ st.markdown(
     font-size: 1rem; color: var(--muted); margin-bottom: 2.2rem;
     line-height: 1.65; max-width: 340px;
   }
-  .pw-field-wrap { width: 100%; max-width: 380px; position: relative; }
 
   /* ─── TOP BAR ─────────────────────────────────── */
   .topbar {
@@ -225,7 +222,6 @@ st.markdown(
     box-shadow: 0 0 0 4px rgba(79,139,255,0.14) !important; outline: none !important;
   }
 
-  /* Labels */
   .stFileUploader label, .stTextArea label, label {
     font-family: var(--font-body) !important;
     color: #dde5f0 !important; font-weight: 600 !important; font-size: 0.95rem !important;
@@ -293,14 +289,14 @@ st.markdown(
     border-radius: 999px; font-size: 0.82rem; font-weight: 600;
   }
 
-  /* ─── REQ ITEMS ─────────────────────────────────────── */
+  /* ─── REQ ITEMS ───────────────────────────────────── */
   .req-item {
     padding: 0.85rem 1rem; border-radius: var(--r-sm);
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
     color: #cdd8e7; font-size: 0.94rem; line-height: 1.68; margin-bottom: 0.6rem;
   }
 
-  /* ─── SUGGESTION CARDS ──────────────────────────────── */
+  /* ─── SUGGESTION CARDS ────────────────────────────── */
   .sug-card {
     border-radius: var(--r-lg); padding: 1.1rem 1.15rem; margin-bottom: 0.9rem;
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -314,7 +310,7 @@ st.markdown(
     color: #c8daff; margin: 0.75rem 0; font-size: 0.93rem; line-height: 1.65;
   }
 
-  /* ─── RADIO ─────────────────────────────────────────── */
+  /* ─── RADIO ───────────────────────────────────────── */
   div[role="radiogroup"] > label {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid var(--border) !important;
@@ -335,7 +331,7 @@ st.markdown(
     font-size: 0.96rem !important; line-height: 1.6 !important;
   }
 
-  /* ─── CODE BLOCKS ───────────────────────────────────── */
+  /* ─── CODE BLOCKS ─────────────────────────────────── */
   div[data-testid="stCodeBlock"] {
     border-radius: 14px !important; overflow: hidden !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
@@ -346,7 +342,7 @@ st.markdown(
     font-size: 0.88rem !important; line-height: 1.65 !important;
   }
 
-  /* ─── LOADING BAR ───────────────────────────────────── */
+  /* ─── LOADING BAR ─────────────────────────────────── */
   .load-wrap { margin: 0.5rem 0 1.2rem; }
   .load-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
   .load-label { font-size: 0.86rem; font-weight: 600; color: var(--muted); }
@@ -362,36 +358,7 @@ st.markdown(
     box-shadow: 0 0 12px rgba(79,139,255,0.5);
   }
 
-  /* ─── DOCX EDITOR ───────────────────────────────────── */
-  .editor-wrap {
-    border-radius: var(--r-xl); overflow: hidden;
-    border: 1px solid var(--border); background: #fff;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
-    margin-bottom: 1.2rem;
-  }
-  .editor-toolbar {
-    display: flex; align-items: center; gap: 0.4rem;
-    padding: 0.7rem 1rem; background: #1e2940;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    flex-wrap: wrap;
-  }
-  .editor-area {
-    background: #fff; color: #1a1a1a;
-    min-height: 480px; padding: 2rem;
-    font-family: 'Georgia', serif; font-size: 14px; line-height: 1.7;
-    outline: none; white-space: pre-wrap; overflow-y: auto;
-  }
-  .editor-area:focus { outline: none; }
-  .tb-btn {
-    padding: 0.32rem 0.56rem; border-radius: 8px; cursor: pointer;
-    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
-    color: #c8d4e3; font-size: 0.82rem; font-weight: 700; transition: all 0.15s;
-  }
-  .tb-btn:hover { background: rgba(79,139,255,0.2); border-color: rgba(79,139,255,0.4); color: #fff; }
-  .tb-sep { width: 1px; height: 22px; background: rgba(255,255,255,0.1); margin: 0 0.25rem; }
-  .tb-label { font-size: 0.76rem; color: var(--muted); font-weight: 600; }
-
-  /* ─── DOWNLOAD CARD ─────────────────────────────────── */
+  /* ─── DOWNLOAD CARD ───────────────────────────────── */
   .dl-card {
     border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
     background: linear-gradient(145deg, rgba(79,139,255,0.08), rgba(79,139,255,0.025));
@@ -401,7 +368,7 @@ st.markdown(
   .dl-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
   .dl-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.1rem; }
 
-  /* ─── SUCCESS / ALERTS ───────────────────────────────── */
+  /* ─── SUCCESS / ALERTS ────────────────────────────── */
   .success-bar {
     padding: 0.88rem 1rem; border-radius: 14px;
     background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
@@ -414,7 +381,6 @@ st.markdown(
   }
   .footer-note { text-align: center; color: var(--subtle); margin-top: 1.5rem; font-size: 0.87rem; }
 
-  /* ─── NOTIFICATION OVERRIDE ─────────────────────────── */
   div[data-baseweb="notification"] { border-radius: 16px !important; }
 
   @media (max-width: 1000px) {
@@ -426,7 +392,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
 
 # ---------------------------------------------------
 # PASSWORD GATE
@@ -452,7 +417,6 @@ def check_password():
         unsafe_allow_html=True,
     )
 
-    # Center the input + button
     _, center_col, _ = st.columns([1, 1.6, 1])
     with center_col:
         st.text_input(
@@ -475,22 +439,25 @@ def check_password():
 if not check_password():
     st.stop()
 
-
 # ---------------------------------------------------
 # REMAINING IMPORTS (only after auth)
 # ---------------------------------------------------
 from resume_processor import ResumeProcessor
 from gemini_client import GeminiClient
-import re
-
 
 # ---------------------------------------------------
 # HELPERS
 # ---------------------------------------------------
 def reset_state_for_new_file():
-    for k in ["ats_analysis", "suggestions", "choices_made", "pdf_bytes",
-              "tailored_docx_bytes", "selected_keywords", "line_edits"]:
-        if k in ["suggestions", "selected_keywords"]:
+    for k in [
+        "ats_analysis",
+        "suggestions",
+        "choices_made",
+        "pdf_bytes",
+        "tailored_docx_bytes",
+        "line_edits",
+    ]:
+        if k == "suggestions":
             st.session_state[k] = []
         elif k == "choices_made":
             st.session_state[k] = {}
@@ -501,13 +468,20 @@ def reset_state_for_new_file():
 
 
 def full_reset():
-    for k in ["resume_processor", "ats_analysis", "suggestions", "choices_made",
-              "pdf_bytes", "tailored_docx_bytes", "uploaded_filename",
-              "uploaded_file_signature", "selected_keywords", "line_edits"]:
+    for k in [
+        "resume_processor",
+        "ats_analysis",
+        "suggestions",
+        "choices_made",
+        "pdf_bytes",
+        "tailored_docx_bytes",
+        "uploaded_filename",
+        "uploaded_file_signature",
+        "line_edits",
+    ]:
         st.session_state[k] = None
     st.session_state["suggestions"] = []
     st.session_state["choices_made"] = {}
-    st.session_state["selected_keywords"] = []
     st.session_state["line_edits"] = {}
 
 
@@ -539,14 +513,18 @@ def convert_docx_to_pdf_bytes(docx_bytes):
         output_pdf = os.path.join(tmpdir, "resume.pdf")
         with open(input_docx, "wb") as f:
             f.write(docx_bytes)
+
         result = subprocess.run(
             ["soffice", "--headless", "--convert-to", "pdf", input_docx, "--outdir", tmpdir],
-            capture_output=True, text=True, check=False,
+            capture_output=True,
+            text=True,
+            check=False,
         )
         if result.returncode != 0:
             raise RuntimeError(f"LibreOffice failed.\n{result.stdout}\n{result.stderr}")
         if not os.path.exists(output_pdf):
             raise RuntimeError("PDF not created.")
+
         with open(output_pdf, "rb") as f:
             return f.read()
 
@@ -565,16 +543,21 @@ client = GeminiClient(GEMINI_API_KEY)
 # SESSION STATE DEFAULTS
 # ---------------------------------------------------
 defaults = {
-    "resume_processor": None, "ats_analysis": None, "suggestions": [],
-    "choices_made": {}, "pdf_bytes": None, "tailored_docx_bytes": None,
-    "uploaded_filename": None, "uploaded_file_signature": None,
-    "selected_keywords": [],
-    "_loading_stage": None, "_loading_pct": 0, "line_edits": {},
+    "resume_processor": None,
+    "ats_analysis": None,
+    "suggestions": [],
+    "choices_made": {},
+    "pdf_bytes": None,
+    "tailored_docx_bytes": None,
+    "uploaded_filename": None,
+    "uploaded_file_signature": None,
+    "_loading_stage": None,
+    "_loading_pct": 0,
+    "line_edits": {},
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
-
 
 # ---------------------------------------------------
 # LOADING BAR HELPER
@@ -594,7 +577,6 @@ def render_loading_bar(label, pct):
 """,
         unsafe_allow_html=True,
     )
-
 
 # ---------------------------------------------------
 # TOP BAR
@@ -619,7 +601,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
 
 # ---------------------------------------------------
 # HERO
@@ -657,19 +638,21 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 # ---------------------------------------------------
 # WORKFLOW PROGRESS
 # ---------------------------------------------------
 steps = 0
-if st.session_state.resume_processor: steps = 1
-if st.session_state.ats_analysis: steps = 2
-if st.session_state.suggestions: steps = 3
-if st.session_state.tailored_docx_bytes is not None: steps = 4
+if st.session_state.resume_processor:
+    steps = 1
+if st.session_state.ats_analysis:
+    steps = 2
+if st.session_state.suggestions:
+    steps = 3
+if st.session_state.tailored_docx_bytes is not None:
+    steps = 4
 
 labels = ["Upload", "ATS Analysis", "Suggestions", "Done"]
 render_loading_bar(f"Workflow — {labels[min(steps, 3)]}", int(steps / 4 * 100))
-
 
 # ---------------------------------------------------
 # STEP 1 — INPUTS
@@ -705,7 +688,10 @@ if uploaded_file is not None:
         st.session_state.uploaded_filename = uploaded_file.name
         st.session_state.uploaded_file_signature = sig
         reset_state_for_new_file()
-        st.markdown('<div class="success-bar">✅ Resume uploaded successfully. Ready to analyze.</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="success-bar">✅ Resume uploaded successfully. Ready to analyze.</div>',
+            unsafe_allow_html=True,
+        )
 
 u1, u2, u3 = st.columns([1, 1, 4], gap="large")
 
@@ -723,14 +709,7 @@ with u1:
             with st.spinner(""):
                 try:
                     ats = client.analyze_ats(resume_text, job_description)
-                    default_sel = (
-                        ats.get("recommended_keyword_targets")
-                        or ats.get("high_priority_missing")
-                        or ats.get("missing_keywords")
-                        or []
-                    )
                     st.session_state.ats_analysis = ats
-                    st.session_state.selected_keywords = default_sel[:12]
                     st.session_state.suggestions = []
                     st.session_state.choices_made = {}
                     st.session_state.tailored_docx_bytes = None
@@ -752,7 +731,6 @@ if st.session_state.resume_processor is not None:
                 st.write(f'**[{line["index"]}]** · {line["char_count"]} chars')
                 st.code(line["text"])
 
-
 # ---------------------------------------------------
 # STEP 2 — ATS
 # ---------------------------------------------------
@@ -762,7 +740,7 @@ if st.session_state.resume_processor:
 <div class="sec-card">
   <div class="step-tag">Step 02</div>
   <div class="sec-title">ATS Match Analysis</div>
-  <div class="sec-sub">Keyword coverage, missing terms, and key requirements before edits.</div>
+  <div class="sec-sub">Review ATS score, missing keywords, and job requirements before generating rewrite suggestions.</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -795,91 +773,54 @@ if st.session_state.ats_analysis:
     with kw1:
         present = ats.get("present_keywords", [])
         html = "".join(f'<span class="chip-ok">{k}</span>' for k in present) or '<span style="color:var(--muted)">None detected.</span>'
-        st.markdown(f'<div class="kw-box"><div class="kw-title">✓ Present Keywords</div><div class="chip-row">{html}</div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="kw-box"><div class="kw-title">✓ Present Keywords</div><div class="chip-row">{html}</div></div>',
+            unsafe_allow_html=True,
+        )
     with kw2:
         missing = ats.get("missing_keywords", [])
         html = "".join(f'<span class="chip-miss">{k}</span>' for k in missing) or '<span style="color:var(--muted)">None missing!</span>'
-        st.markdown(f'<div class="kw-box"><div class="kw-title">⚠ Missing Keywords</div><div class="chip-row">{html}</div></div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="kw-box"><div class="kw-title">⚠ Missing Keywords</div><div class="chip-row">{html}</div></div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("### Key Requirements")
     for req in ats.get("key_requirements", []):
         st.markdown(f'<div class="req-item">→ {req}</div>', unsafe_allow_html=True)
 
-    st.markdown("### Choose Target Keywords")
-    kw_pool = []
-    for group in [
-        ats.get("recommended_keyword_targets", []),
-        ats.get("high_priority_missing", []),
-        ats.get("medium_priority_missing", []),
-        ats.get("missing_keywords", []),
-        ats.get("required_keywords", []),
-        ats.get("preferred_keywords", []),
-    ]:
-        for kw in group:
-            if kw and kw not in kw_pool:
-                kw_pool.append(kw)
-
-    if not st.session_state.selected_keywords:
-        st.session_state.selected_keywords = (
-            ats.get("recommended_keyword_targets") or ats.get("high_priority_missing") or kw_pool
-        )[:12]
-
-    st.caption("Only selected keywords will be targeted in rewrite generation.")
-    selected_keywords = st.multiselect(
-        "Keywords to target",
-        options=kw_pool,
-        default=st.session_state.selected_keywords,
-        key="kw_multi",
-    )
-    st.session_state.selected_keywords = selected_keywords
-
-    sc1, sc2, sc3 = st.columns(3, gap="large")
-    with sc1:
-        st.markdown('<div class="metric-shell">', unsafe_allow_html=True)
-        st.metric("Selected", len(selected_keywords))
-        st.markdown('</div>', unsafe_allow_html=True)
-    with sc2:
-        st.markdown('<div class="metric-shell">', unsafe_allow_html=True)
-        st.metric("High Priority Missing", len(ats.get("high_priority_missing", [])))
-        st.markdown('</div>', unsafe_allow_html=True)
-    with sc3:
-        st.markdown('<div class="metric-shell">', unsafe_allow_html=True)
-        st.metric("Recommended Targets", len(ats.get("recommended_keyword_targets", [])))
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    rec = ats.get("recommended_keyword_targets", [])
-    if rec:
-        html = "".join(f'<span class="chip-miss">{k}</span>' for k in rec)
-        st.markdown(f'<div class="kw-box"><div class="kw-title">★ Recommended Targets</div><div class="chip-row">{html}</div></div>', unsafe_allow_html=True)
-
     gen_c1, _ = st.columns([1, 4], gap="large")
     with gen_c1:
         if st.button("Generate Suggestions", use_container_width=True):
-            if not st.session_state.selected_keywords:
-                st.warning("Select at least one keyword.")
-            else:
-                lines = st.session_state.resume_processor.get_all_lines()
-                render_loading_bar("Generating AI rewrites…", 65)
-                with st.spinner(""):
-                    try:
-                        sugs = client.generate_suggestions(
-                            lines=lines,
-                            job_description=job_description,
-                            ats_analysis=ats,
-                            selected_keywords=st.session_state.selected_keywords,
-                        )
-                        st.session_state.suggestions = sugs
-                        st.session_state.choices_made = {}
-                        st.session_state.tailored_docx_bytes = None
-                        st.session_state.pdf_bytes = None
-                        render_loading_bar("Suggestions ready", 75)
-                        if sugs:
-                            st.success(f"Generated {len(sugs)} suggestion(s).")
-                        else:
-                            st.warning("No suggestions returned. Try different keywords.")
-                    except Exception as e:
-                        st.error(f"Generation failed: {e}")
+            lines = st.session_state.resume_processor.get_all_lines()
+            render_loading_bar("Generating AI rewrites…", 65)
+            with st.spinner(""):
+                try:
+                    target_keywords = (
+                        ats.get("high_priority_missing")
+                        or ats.get("recommended_keyword_targets")
+                        or ats.get("missing_keywords")
+                        or []
+                    )
 
+                    sugs = client.generate_suggestions(
+                        lines=lines,
+                        job_description=job_description,
+                        ats_analysis=ats,
+                        selected_keywords=target_keywords,
+                    )
+                    st.session_state.suggestions = sugs
+                    st.session_state.choices_made = {}
+                    st.session_state.tailored_docx_bytes = None
+                    st.session_state.pdf_bytes = None
+                    render_loading_bar("Suggestions ready", 75)
+
+                    if sugs:
+                        st.success(f"Generated {len(sugs)} suggestion(s).")
+                    else:
+                        st.warning("No suggestions returned.")
+                except Exception as e:
+                    st.error(f"Generation failed: {e}")
 
 # ---------------------------------------------------
 # STEP 3 — SUGGESTIONS
@@ -892,8 +833,8 @@ if st.session_state.suggestions:
         """
 <div class="sec-card">
   <div class="step-tag">Step 03</div>
-  <div class="sec-title">Choose Better Rewrites</div>
-  <div class="sec-sub">Review suggestions line by line. Keep only the changes you want.</div>
+  <div class="sec-title">Generated Suggestions</div>
+  <div class="sec-sub">Suggestions were generated using ATS gaps and missing keywords. Review and keep only the changes you want.</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -912,8 +853,12 @@ if st.session_state.suggestions:
         st.markdown('<div class="sug-card">', unsafe_allow_html=True)
         st.markdown(f'<div class="line-label">Resume Line {li}</div>', unsafe_allow_html=True)
         st.code(original, language=None)
+
         if reason:
-            st.markdown(f'<div class="reason-box"><strong>Why flagged:</strong> {reason}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="reason-box"><strong>Why flagged:</strong> {reason}</div>',
+                unsafe_allow_html=True,
+            )
 
         radio_opts = ["Keep original"] + options
         cur = st.session_state.choices_made.get(i, "Keep original")
@@ -924,10 +869,12 @@ if st.session_state.suggestions:
             key=f"r_{i}",
             label_visibility="collapsed",
         )
+
         if sel == "Keep original":
             st.session_state.choices_made.pop(i, None)
         else:
             st.session_state.choices_made[i] = sel
+
         st.markdown('</div>', unsafe_allow_html=True)
 
     ap1, _ = st.columns([1, 4], gap="large")
@@ -937,26 +884,28 @@ if st.session_state.suggestions:
                 st.error("Resume processor not found. Re-upload your resume.")
             else:
                 try:
-                    fresh_proc = ResumeProcessor(uploaded_file.getvalue()) if uploaded_file else ResumeProcessor(st.session_state.resume_processor.export())
+                    fresh_proc = ResumeProcessor(uploaded_file.getvalue()) if uploaded_file else ResumeProcessor(
+                        st.session_state.resume_processor.export()
+                    )
+
                     for i, sug in enumerate(st.session_state.suggestions):
                         chosen_text = st.session_state.choices_made.get(i)
                         if chosen_text:
                             fresh_proc.replace_line(sug["line_index"], chosen_text)
+
                     st.session_state.resume_processor = fresh_proc
                     st.session_state.tailored_docx_bytes = fresh_proc.export()
                     st.session_state.pdf_bytes = None
-                    st.session_state.line_edits = {}  # reset so editor re-reads new lines
+                    st.session_state.line_edits = {}
                     render_loading_bar("Changes applied — ready to edit & export", 90)
                     st.success("Changes applied. Review and fine-tune in the editor below.")
                 except Exception as e:
                     st.error(f"Failed to apply changes: {e}")
 
-
 # ---------------------------------------------------
 # STEP 4 — INLINE EDITOR + EXPORT
 # ---------------------------------------------------
 if st.session_state.resume_processor is not None:
-
     lines = st.session_state.resume_processor.get_all_lines()
     name_part = extract_name_from_resume(lines)
     job_part = extract_job_title(job_description if job_description else "")
@@ -977,17 +926,13 @@ if st.session_state.resume_processor is not None:
         unsafe_allow_html=True,
     )
 
-    # ── PER-LINE TEXT EDITOR ──────────────────────────────────────────────
-    # Shows every non-empty line as an editable text_input.
-    # Changes are stored in session_state and applied to the processor on demand.
-
     st.markdown(
         """
 <div style="background:rgba(79,139,255,0.06);border:1px solid rgba(79,139,255,0.16);
             border-radius:16px;padding:1rem 1.2rem;margin-bottom:1rem;">
   <span style="font-size:0.85rem;color:#a8c4ff;font-weight:600;">
     ✏️ Edit any line below, then click <strong>Apply Line Edits → Rebuild DOCX</strong> to bake your changes in.
-    The download will always reflect the latest rebuild. Original formatting (bold, fonts, spacing) is preserved.
+    The download will always reflect the latest rebuild. Original formatting is preserved.
   </span>
 </div>
 """,
@@ -1000,14 +945,15 @@ if st.session_state.resume_processor is not None:
     if "line_edits" not in st.session_state:
         st.session_state.line_edits = {}
 
-    # Initialise line_edits with current text if not already set
     for l in editable_lines:
         idx = l["index"]
         if idx not in st.session_state.line_edits:
             st.session_state.line_edits[idx] = l["text"]
 
-    # Render editor rows in a styled container
-    st.markdown('<div style="border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:1rem;">', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:1rem;">',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         '<div style="background:#1a2236;padding:0.65rem 1.1rem;border-bottom:1px solid rgba(255,255,255,0.07);">'
         '<span style="font-size:0.75rem;font-weight:700;color:#7a90b0;text-transform:uppercase;letter-spacing:0.09em;">'
@@ -1035,24 +981,20 @@ if st.session_state.resume_processor is not None:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── APPLY LINE EDITS → REBUILD DOCX ──────────────────────────────────
     apply_col, _ = st.columns([1, 3], gap="large")
     with apply_col:
         if st.button("✅ Apply Line Edits → Rebuild DOCX", use_container_width=True):
             try:
-                # Re-create processor from original uploaded bytes to avoid stacking edits
                 if uploaded_file is not None:
                     fresh_proc = ResumeProcessor(uploaded_file.getvalue())
                 else:
                     fresh_proc = ResumeProcessor(st.session_state.resume_processor.export())
 
-                # First apply any AI-suggestion choices
                 for i, sug in enumerate(st.session_state.suggestions):
                     chosen_text = st.session_state.choices_made.get(i)
                     if chosen_text:
                         fresh_proc.replace_line(sug["line_index"], chosen_text)
 
-                # Then apply manual line edits on top
                 for idx, new_text in st.session_state.line_edits.items():
                     original_text = next(
                         (l["text"] for l in all_lines if l["index"] == idx), None
@@ -1068,14 +1010,12 @@ if st.session_state.resume_processor is not None:
             except Exception as e:
                 st.error(f"Failed to rebuild DOCX: {e}")
 
-    # Always use the latest tailored bytes if available, else export current state
     current_docx = (
         st.session_state.tailored_docx_bytes
         if st.session_state.tailored_docx_bytes is not None
         else st.session_state.resume_processor.export()
     )
 
-    # ── EXPORT OPTIONS ────────────────────────────────────────────────────
     st.markdown(
         """
 <div class="dl-card">
@@ -1126,6 +1066,7 @@ if st.session_state.resume_processor is not None:
                         st.success("PDF ready to download.")
                     except Exception as e:
                         st.error(f"PDF conversion failed: {e}")
+
             if st.session_state.pdf_bytes:
                 st.download_button(
                     label="⬇ Download PDF",
@@ -1153,12 +1094,8 @@ if st.session_state.resume_processor is not None:
             'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Google Docs</div>',
             unsafe_allow_html=True,
         )
-        # The most reliable way to get a file into Google Docs is:
-        # 1. User downloads the DOCX  (already available above)
-        # 2. Opens drive.google.com/drive/upload which opens the Drive file picker/upload
-        # 3. After uploading, right-click → Open with Google Docs
-        # We provide a direct link to Google Drive's "New" upload page.
-        gdocs_html = f"""
+
+        gdocs_html = """
 <div style="background:rgba(79,139,255,0.07);border:1px solid rgba(79,139,255,0.18);
             border-radius:16px;padding:1rem 1.1rem;">
   <ol style="font-size:0.83rem;color:#9ab0cc;line-height:1.8;margin:0 0 0.85rem 1.1rem;padding:0;">
@@ -1172,9 +1109,6 @@ if st.session_state.resume_processor is not None:
             background:linear-gradient(135deg,#3a74f0,#5d95ff);color:#fff;
             font-size:0.88rem;font-weight:700;text-decoration:none;
             box-shadow:0 6px 18px rgba(79,139,255,0.32);transition:all 0.15s;">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 5v14M5 12l7-7 7 7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
     Open Google Drive Upload ↗
   </a>
 </div>
