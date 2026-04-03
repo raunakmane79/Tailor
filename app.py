@@ -1223,11 +1223,11 @@ if generate_clicked:
         with st.spinner("Generating suggestions..."):
             try:
                 suggestions = client.generate_suggestions(
-                    lines=lines,
-                    job_description=job_description,
-                    ats_analysis=ats,
-                    selected_keywords=st.session_state.selected_keywords,
-                )
+    lines=lines,
+    job_description=job_description,
+    ats_analysis=ats,
+    selected_keywords=st.session_state.selected_keywords,
+)
                 st.session_state.suggestions = suggestions
                 st.session_state.choices_made = {}
                 st.session_state.tailored_docx_bytes = None
