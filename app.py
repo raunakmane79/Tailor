@@ -66,45 +66,28 @@ st.markdown(
   }
 
   .block-container {
-    max-width: 1320px;
+    max-width: 100% !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
+
 
   header[data-testid="stHeader"] { background: transparent !important; }
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
 
   /* ---------- PREMIUM LOGIN ---------- */
-  .login-page {
-    height: 100vh;
+   .login-page {
     min-height: 100vh;
     display: flex;
     align-items: flex-start;
     justify-content: center;
+    padding-top: 7vh;
     overflow: hidden;
-    padding-top: 8vh;
   }
 
   .login-shell {
     width: 100%;
-    max-width: 430px;
-    position: relative;
-  }
-
-  .login-shell::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    border-radius: 30px;
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(123,167,255,0.45), rgba(255,255,255,0.08), rgba(79,139,255,0.32));
-    -webkit-mask:
-      linear-gradient(#fff 0 0) content-box,
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-            mask-composite: exclude;
-    pointer-events: none;
   }
 
   .login-card-premium {
@@ -119,11 +102,21 @@ st.markdown(
       inset 0 1px 0 rgba(255,255,255,0.05);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    text-align: center;
+    margin-bottom: 0.9rem;
+  }
+
+  .login-form-card {
+    border-radius: 24px;
+    padding: 1rem;
+    background: rgba(10,16,30,0.70);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.30);
   }
 
   .login-top {
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.4rem;
   }
 
   .login-badge {
@@ -165,7 +158,7 @@ st.markdown(
   .login-divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-    margin: 1rem 0 1rem;
+    margin: 1rem 0 0.2rem;
   }
 
   .login-mini-pill-row {
@@ -215,8 +208,6 @@ st.markdown(
     opacity: 1 !important;
   }
 
-  .stButton > button,
-  .stDownloadButton > button,
   div[data-testid="stFormSubmitButton"] > button {
     width: 100% !important;
     border-radius: 16px !important;
@@ -231,8 +222,6 @@ st.markdown(
     transition: all 0.18s ease !important;
   }
 
-  .stButton > button:hover,
-  .stDownloadButton > button:hover,
   div[data-testid="stFormSubmitButton"] > button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 14px 32px rgba(79,139,255,0.42) !important;
@@ -245,6 +234,7 @@ st.markdown(
     font-size: 0.8rem;
     color: #6e7b8f;
   }
+
 
   .topbar {
     display: flex;
@@ -800,62 +790,71 @@ def check_password():
         else:
             st.session_state["_auth_fail"] = True
 
-    st.markdown(
-        '<div class="login-page"><div class="login-shell"><div class="login-card-premium">',
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div class="login-page">', unsafe_allow_html=True)
 
-    st.markdown(
-        """
-        <div class="login-top">
-            <div class="login-badge">✦</div>
-            <div class="login-title">Rizzume</div>
-            <div class="login-sub">
-                Secure access to your premium resume tailoring workspace.
-            </div>
-            <div class="login-mini-pill-row">
-                <div class="login-mini-pill">ATS Match</div>
-                <div class="login-mini-pill">AI Rewrites</div>
-                <div class="login-mini-pill">DOCX Export</div>
-            </div>
-        </div>
-        <div class="login-divider"></div>
-        """,
-        unsafe_allow_html=True,
-    )
+    left, center, right = st.columns([1.2, 1, 1.2])
 
-    with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
-        st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
-        st.text_input(
-            "Log In ID",
-            key="login_id_input",
-            label_visibility="collapsed",
-            placeholder="Enter any ID",
+    with center:
+        st.markdown(
+            """
+            <div class="login-shell">
+              <div class="login-card-premium">
+                <div class="login-top">
+                    <div class="login-badge">✦</div>
+                    <div class="login-title">Rizzume</div>
+                    <div class="login-sub">
+                        Secure access to your premium resume tailoring workspace.
+                    </div>
+                    <div class="login-mini-pill-row">
+                        <div class="login-mini-pill">ATS Match</div>
+                        <div class="login-mini-pill">AI Rewrites</div>
+                        <div class="login-mini-pill">DOCX Export</div>
+                    </div>
+                </div>
+                <div class="login-divider"></div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
 
-        st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
-        st.text_input(
-            "Password",
-            type="password",
-            key="pw_input",
-            label_visibility="collapsed",
-            placeholder="Enter password",
-        )
+        with st.container():
+            st.markdown('<div class="login-form-card">', unsafe_allow_html=True)
 
-        submitted = st.form_submit_button("Enter Workspace ✦", use_container_width=True)
+            with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
+                st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
+                st.text_input(
+                    "Log In ID",
+                    key="login_id_input",
+                    label_visibility="collapsed",
+                    placeholder="Enter any ID",
+                )
 
-        if submitted:
-            _authenticate()
+                st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
+                st.text_input(
+                    "Password",
+                    type="password",
+                    key="pw_input",
+                    label_visibility="collapsed",
+                    placeholder="Enter password",
+                )
 
-    if st.session_state.get("_auth_fail"):
-        st.error("Incorrect password. Please try again.")
+                submitted = st.form_submit_button("Enter Workspace ✦", use_container_width=True)
 
-    st.markdown(
-        '<div class="login-note">Private workspace • Authorized access only</div>',
-        unsafe_allow_html=True,
-    )
+                if submitted:
+                    _authenticate()
 
-    st.markdown('</div></div></div>', unsafe_allow_html=True)
+            if st.session_state.get("_auth_fail"):
+                st.error("Incorrect password. Please try again.")
+
+            st.markdown(
+                '<div class="login-note">Private workspace • Authorized access only</div>',
+                unsafe_allow_html=True,
+            )
+
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
     return False
 
 
