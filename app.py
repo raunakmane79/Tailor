@@ -715,7 +715,7 @@ def check_password():
                     status.markdown("Loading workspace ✦")
                 else:
                     status.markdown("Almost there ✦")
-                time.sleep(0.02)  # ~2 seconds total
+                time.sleep(0.02)
             progress.empty()
             status.empty()
             st.session_state["_auth"] = True
@@ -724,88 +724,58 @@ def check_password():
         else:
             st.session_state["_auth_fail"] = True
 
-    st.markdown(
-        """
-<div class="pw-wrap">
-  <div class="pw-shell">
-    <div class="pw-badge">✦</div>
-    <div class="pw-title">Rizzume</div>
-    <div class="pw-sub">Secure access for your resume tailoring workspace.</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
+    st.markdown('<div class="login-page">', unsafe_allow_html=True)
+    _, center, _ = st.columns([1.2, 1, 1.2])
 
-    _, center_col, _ = st.columns([1, 1.25, 1])
-
-    with center_col:
-        with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
-            st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
-            st.text_input(
-                "Log In ID",
-                key="login_id_input",
-                label_visibility="collapsed",
-                placeholder="Enter any ID",
-            )
-
-            st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
-            st.text_input(
-                "Password",
-                type="password",
-                key="pw_input",
-                label_visibility="collapsed",
-                placeholder="Enter password",
-            )
-
-            submitted = st.form_submit_button("Enter ✦", use_container_width=True)
-
-            if submitted:
-                _authenticate()
-
-        if st.session_state.get("_auth_fail"):
-            st.error("Incorrect password. Please try again.")
-
+    with center:
         st.markdown(
-            '<div class="auth-footnote">Log In ID is visual only. Password controls access.</div>',
+            """
+            <div class="login-card">
+                <div class="pw-badge">✦</div>
+                <div class="pw-title">Rizzume</div>
+                <div class="pw-sub">Secure access for your resume tailoring workspace.</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("</div>", unsafe_allow_html=True)
+        with st.container():
+            st.markdown('<div class="login-form-wrap">', unsafe_allow_html=True)
+
+            with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
+                st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
+                st.text_input(
+                    "Log In ID",
+                    key="login_id_input",
+                    label_visibility="collapsed",
+                    placeholder="Enter any ID",
+                )
+
+                st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
+                st.text_input(
+                    "Password",
+                    type="password",
+                    key="pw_input",
+                    label_visibility="collapsed",
+                    placeholder="Enter password",
+                )
+
+                submitted = st.form_submit_button("Enter ✦", use_container_width=True)
+
+                if submitted:
+                    _authenticate()
+
+            if st.session_state.get("_auth_fail"):
+                st.error("Incorrect password. Please try again.")
+
+            st.markdown(
+                '<div class="auth-footnote">Forgot password? Forget access.</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
     return False
-
-    st.markdown(
-        """
-<div class="pw-wrap">
-    <div class="pw-badge">✦</div>
-    <div class="pw-title">Rizzume</div>
-    <div class="pw-sub">Enter your access code to continue.</div>
-</div>
-""",
-        unsafe_allow_html=True,
-    )
-
-    _, center_col, _ = st.columns([1, 1.6, 1])
-    with center_col:
-        st.text_input(
-            "Password",
-            type="password",
-            key="pw_input",
-            label_visibility="collapsed",
-            placeholder="Enter password…",
-        )
-        if st.button("Enter  →", use_container_width=True, key="pw_btn"):
-            _submit()
-
-        if st.session_state.get("_auth_fail"):
-            st.error("Incorrect password. Please try again.")
-            st.session_state["_auth_fail"] = False
-
-    return False
-
-
-if not check_password():
-    st.stop()
-
 # ---------------------------------------------------
 # REMAINING IMPORTS (only after auth)
 # ---------------------------------------------------
