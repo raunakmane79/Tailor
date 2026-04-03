@@ -1266,12 +1266,6 @@ if st.session_state.suggestions:
 # ---------------------------------------------------
 if st.session_state.resume_processor is not None:
     st.markdown('<div class="download-card">', unsafe_allow_html=True)
-    st.markdown('<div class="download-title">Download Your Final Resume</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="section-sub">Export your tailored DOCX, then generate a PDF once everything looks right.</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown('<div class="subtle-divider"></div>', unsafe_allow_html=True)
 
     current_docx_bytes = (
         st.session_state.tailored_docx_bytes
@@ -1279,23 +1273,23 @@ if st.session_state.resume_processor is not None:
         else st.session_state.resume_processor.export()
     )
 
-lines = st.session_state.resume_processor.get_all_lines()
+    # ✅ FIXED: INSIDE BLOCK
+    lines = st.session_state.resume_processor.get_all_lines()
+    name_part = extract_name_from_resume(lines)
+    job_part = extract_job_title(job_description)
 
-name_part = extract_name_from_resume(lines)
-job_part = extract_job_title(job_description)
+    file_stem = f"{name_part}_{job_part}_Resume"
 
-file_stem = f"{name_part}_{job_part}_Resume"
+    d1, d2, d3 = st.columns([1, 1, 1.2], gap="large")
 
-d1, d2, d3 = st.columns([1, 1, 1.2], gap="large")
     with d1:
         st.download_button(
             label="Download DOCX",
             data=current_docx_bytes,
-            file_name=f"{file_stem}_rizzume.docx",
+            file_name=f"{file_stem}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True,
         )
-
     with d2:
         if SOFFICE_AVAILABLE:
             if st.button("Generate PDF", use_container_width=True):
