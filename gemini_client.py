@@ -207,7 +207,8 @@ JOB DESCRIPTION:
             if line.get("text", "").strip()
         )
 
-    def generate_suggestions(self, lines, job_description, ats_analysis, max_retries=3):
+def generate_suggestions(self, lines, job_description, ats_analysis, selected_keywords=None):
+        selected_keywords = selected_keywords or []      
         missing_keywords = ats_analysis.get("missing_keywords", [])
         key_requirements = ats_analysis.get("key_requirements", [])
 
