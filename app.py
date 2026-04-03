@@ -1113,137 +1113,138 @@ if st.session_state.ats_analysis:
     if ats.get("score_note"):
         st.info(ats.get("score_note"))
 
-kw1, kw2 = st.columns(2, gap="large")
+    kw1, kw2 = st.columns(2, gap="large")
 
-with kw1:
-    present_keywords = ats.get("present_keywords", [])
-    present_html = (
-        "".join([f'<span class="chip-good">{kw}</span>' for kw in present_keywords])
-        if present_keywords
-        else '<span style="color:#9fb0c4;">No keywords detected.</span>'
-    )
+    with kw1:
+        present_keywords = ats.get("present_keywords", [])
+        present_html = (
+            "".join([f'<span class="chip-good">{kw}</span>' for kw in present_keywords])
+            if present_keywords
+            else '<span style="color:#9fb0c4;">No keywords detected.</span>'
+        )
 
-    st.markdown(
-        f"""
-    <div class="keyword-box">
-        <div class="keyword-title">Present Keywords</div>
-        <div class="chip-wrap">{present_html}</div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            f"""
+        <div class="keyword-box">
+            <div class="keyword-title">Present Keywords</div>
+            <div class="chip-wrap">{present_html}</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 
-with kw2:
-    missing_keywords = ats.get("missing_keywords", [])
-    missing_html = (
-        "".join([f'<span class="chip-missing">{kw}</span>' for kw in missing_keywords])
-        if missing_keywords
-        else '<span style="color:#9fb0c4;">No missing keywords detected.</span>'
-    )
+    with kw2:
+        missing_keywords = ats.get("missing_keywords", [])
+        missing_html = (
+            "".join([f'<span class="chip-missing">{kw}</span>' for kw in missing_keywords])
+            if missing_keywords
+            else '<span style="color:#9fb0c4;">No missing keywords detected.</span>'
+        )
 
-    st.markdown(
-        f"""
-    <div class="keyword-box">
-        <div class="keyword-title">Missing Keywords</div>
-        <div class="chip-wrap">{missing_html}</div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            f"""
+        <div class="keyword-box">
+            <div class="keyword-title">Missing Keywords</div>
+            <div class="chip-wrap">{missing_html}</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
 
-st.markdown("### Key Requirements")
-key_requirements = ats.get("key_requirements", [])
-if key_requirements:
-    for req in key_requirements:
-        st.markdown(f'<div class="req-item">{req}</div>', unsafe_allow_html=True)
-else:
-    st.caption("No key requirements returned.")
-
-# ---- NEW: keyword targeting panel ----
-st.markdown("### Choose Target Keywords")
-
-required_keywords = ats.get("required_keywords", [])
-preferred_keywords = ats.get("preferred_keywords", [])
-high_priority_missing = ats.get("high_priority_missing", [])
-medium_priority_missing = ats.get("medium_priority_missing", [])
-recommended_keyword_targets = ats.get("recommended_keyword_targets", [])
-
-keyword_pool = []
-for group in [
-    recommended_keyword_targets,
-    high_priority_missing,
-    medium_priority_missing,
-    ats.get("missing_keywords", []),
-    required_keywords,
-    preferred_keywords,
-]:
-    for kw in group:
-        if kw and kw not in keyword_pool:
-            keyword_pool.append(kw)
-
-if not st.session_state.selected_keywords:
-    st.session_state.selected_keywords = (recommended_keyword_targets or high_priority_missing or keyword_pool)[:12]
-
-st.caption("Only the keywords selected here will be targeted in rewrite generation.")
-
-selected_keywords = st.multiselect(
-    "Select keywords to target in resume rewrites",
-    options=keyword_pool,
-    default=st.session_state.selected_keywords,
-    key="selected_keywords_multiselect",
-)
-
-st.session_state.selected_keywords = selected_keywords
-
-sel_c1, sel_c2, sel_c3 = st.columns(3, gap="large")
-with sel_c1:
-    st.metric("Selected Keywords", len(st.session_state.selected_keywords))
-with sel_c2:
-    st.metric("High Priority Missing", len(high_priority_missing))
-with sel_c3:
-    st.metric("Recommended Targets", len(recommended_keyword_targets))
-
-if recommended_keyword_targets:
-    rec_html = "".join([f'<span class="chip-missing">{kw}</span>' for kw in recommended_keyword_targets])
-    st.markdown(
-        f"""
-    <div class="keyword-box">
-        <div class="keyword-title">Recommended Keyword Targets</div>
-        <div class="chip-wrap">{rec_html}</div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-gen_col1, gen_col2 = st.columns([1, 4], gap="large")
-with gen_col1:
-    generate_clicked = st.button("Generate Suggestions", use_container_width=True)
-
-if generate_clicked:
-    if not st.session_state.selected_keywords:
-        st.warning("Select at least one target keyword before generating suggestions.")
+    st.markdown("### Key Requirements")
+    key_requirements = ats.get("key_requirements", [])
+    if key_requirements:
+        for req in key_requirements:
+            st.markdown(f'<div class="req-item">{req}</div>', unsafe_allow_html=True)
     else:
-        lines = st.session_state.resume_processor.get_all_lines()
-        st.toast("Generating line rewrites…", icon="✨")
-        with st.spinner("Generating suggestions..."):
-            try:
-                suggestions = client.generate_suggestions(
-    lines=lines,
-    job_description=job_description,
-    ats_analysis=ats,
-    selected_keywords=st.session_state.selected_keywords,
-)
-                st.session_state.suggestions = suggestions
-                st.session_state.choices_made = {}
-                st.session_state.tailored_docx_bytes = None
-                st.session_state.pdf_bytes = None
+        st.caption("No key requirements returned.")
 
-                if suggestions:
-                    st.success("Suggestions generated using only the selected keywords.")
-                else:
-                    st.warning("No suggestions were returned. Try different selected keywords.")
-            except Exception as e:
-                st.error(f"Suggestion generation failed: {e}")
+    st.markdown("### Choose Target Keywords")
+
+    required_keywords = ats.get("required_keywords", [])
+    preferred_keywords = ats.get("preferred_keywords", [])
+    high_priority_missing = ats.get("high_priority_missing", [])
+    medium_priority_missing = ats.get("medium_priority_missing", [])
+    recommended_keyword_targets = ats.get("recommended_keyword_targets", [])
+
+    keyword_pool = []
+    for group in [
+        recommended_keyword_targets,
+        high_priority_missing,
+        medium_priority_missing,
+        ats.get("missing_keywords", []),
+        required_keywords,
+        preferred_keywords,
+    ]:
+        for kw in group:
+            if kw and kw not in keyword_pool:
+                keyword_pool.append(kw)
+
+    if not st.session_state.selected_keywords:
+        st.session_state.selected_keywords = (
+            recommended_keyword_targets or high_priority_missing or keyword_pool
+        )[:12]
+
+    st.caption("Only the keywords selected here will be targeted in rewrite generation.")
+
+    selected_keywords = st.multiselect(
+        "Select keywords to target in resume rewrites",
+        options=keyword_pool,
+        default=st.session_state.selected_keywords,
+        key="selected_keywords_multiselect",
+    )
+
+    st.session_state.selected_keywords = selected_keywords
+
+    sel_c1, sel_c2, sel_c3 = st.columns(3, gap="large")
+    with sel_c1:
+        st.metric("Selected Keywords", len(st.session_state.selected_keywords))
+    with sel_c2:
+        st.metric("High Priority Missing", len(high_priority_missing))
+    with sel_c3:
+        st.metric("Recommended Targets", len(recommended_keyword_targets))
+
+    if recommended_keyword_targets:
+        rec_html = "".join([f'<span class="chip-missing">{kw}</span>' for kw in recommended_keyword_targets])
+        st.markdown(
+            f"""
+        <div class="keyword-box">
+            <div class="keyword-title">Recommended Keyword Targets</div>
+            <div class="chip-wrap">{rec_html}</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+    gen_col1, gen_col2 = st.columns([1, 4], gap="large")
+    with gen_col1:
+        generate_clicked = st.button("Generate Suggestions", use_container_width=True)
+
+    if generate_clicked:
+        if not st.session_state.selected_keywords:
+            st.warning("Select at least one target keyword before generating suggestions.")
+        else:
+            lines = st.session_state.resume_processor.get_all_lines()
+            st.toast("Generating line rewrites…", icon="✨")
+            with st.spinner("Generating suggestions..."):
+                try:
+                    suggestions = client.generate_suggestions(
+                        lines=lines,
+                        job_description=job_description,
+                        ats_analysis=ats,
+                        selected_keywords=st.session_state.selected_keywords,
+                    )
+                    st.session_state.suggestions = suggestions
+                    st.session_state.choices_made = {}
+                    st.session_state.tailored_docx_bytes = None
+                    st.session_state.pdf_bytes = None
+
+                    if suggestions:
+                        st.success("Suggestions generated using only the selected keywords.")
+                    else:
+                        st.warning("No suggestions were returned. Try different selected keywords.")
+                except Exception as e:
+                    st.error(f"Suggestion generation failed: {e}")
 
 # ---------------------------------------------------
 # STEP 3 - SUGGESTION CHOICES
