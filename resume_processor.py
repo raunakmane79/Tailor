@@ -80,7 +80,7 @@ class ResumeProcessor:
                     }
                     idx += 1
 
-    method
+ @staticmethod
     def _clean_text(text: str) -> str:
         if not text:
             return ""
@@ -145,7 +145,7 @@ class ResumeProcessor:
         return True
 
     @staticmethod
-    def _replace_para_text(para, new_text: str) -> None:
+        def _replace_para_text(para, new_text: str) -> None:
         """
         Replace paragraph text while preserving the first meaningful run style.
         """
