@@ -776,8 +776,26 @@ def show_empty_state(message: str) -> None:
         """,
         unsafe_allow_html=True,
     )
+def extract_name_from_resume(lines):
+    for line in lines:
+        text = line["text"].strip()
+        words = text.split()
+        if len(words) >= 2:
+            return f"{words[0]}_{words[1]}"
+    return "Candidate"
+import re
 
-
+def extract_job_title(job_description):
+    # Try first line or common patterns
+    lines = job_description.strip().split("\n")
+    
+    for line in lines[:5]:
+        line = line.strip()
+        if len(line) < 80 and not line.lower().startswith(("about", "we", "company")):
+            return re.sub(r'[^\w\s]', '', line).replace(" ", "_")
+    
+    return "Role"
+    
 def convert_docx_to_pdf_bytes(docx_bytes: bytes) -> bytes:
     with tempfile.TemporaryDirectory() as tmpdir:
         input_docx = os.path.join(tmpdir, "resume.docx")
@@ -1261,7 +1279,12 @@ if st.session_state.resume_processor is not None:
         else st.session_state.resume_processor.export()
     )
 
-    file_stem = get_file_stem(st.session_state.uploaded_filename or "resume.docx")
+lines = st.session_state.resume_processor.get_all_lines()
+
+name_part = extract_name_from_resume(lines)
+job_part = extract_job_title(job_description)
+
+file_stem = f"{name_part}_{job_part}_Resume"
 
     d1, d2, d3 = st.columns([1, 1, 1.2], gap="large")
 
