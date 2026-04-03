@@ -80,7 +80,7 @@ class ResumeProcessor:
                     }
                     idx += 1
 
-    @staticmethod
+    method
     def _clean_text(text: str) -> str:
         if not text:
             return ""
@@ -383,61 +383,75 @@ class ATSScorer:
             issues=ATSUtils.dedupe_keep_order(issues),
         )
 
-    @staticmethod
-    def score_rewrite_option(
-        original: str,
-        option: str,
-        jd: JDAnalysis,
-        max_chars: Optional[int] = None,
-    ) -> int:
-        text = ATSUtils.clean_text(option)
-        original_text = ATSUtils.clean_text(original)
+@staticmethod
+def score_rewrite_option(
+    original: str,
+    option: str,
+    jd: JDAnalysis,
+    max_chars: Optional[int] = None,
+    selected_keywords: Optional[List[str]] = None,
+) -> int:
+    text = ATSUtils.clean_text(option)
+    original_text = ATSUtils.clean_text(original)
+    selected_keywords = selected_keywords or []
 
-        critical_terms = ATSUtils.dedupe_keep_order(
-            jd.ats_critical_terms + jd.required_tools + jd.required_skills + jd.required_domain_terms
-        )
-        critical_hits = ATSUtils.find_keyword_hits(text, critical_terms)
-        keyword_score = min(ATSScorer.WEIGHTS["keyword_relevance"], len(critical_hits) * 4)
+    critical_terms = ATSUtils.dedupe_keep_order(
+        jd.ats_critical_terms + jd.required_tools + jd.required_skills + jd.required_domain_terms
+    )
+    critical_hits = ATSUtils.find_keyword_hits(text, critical_terms)
+    keyword_score = min(20, len(critical_hits) * 3)
 
-        truthfulness_score = ATSScorer.WEIGHTS["truthfulness"]
-        if len(text) > max(40, len(original_text) * 2.2):
-            truthfulness_score -= 4
-        if text.count(";") > 1:
-            truthfulness_score -= 2
+    selected_hits = ATSUtils.find_keyword_hits(text, selected_keywords)
+    selected_keyword_score = min(25, len(selected_hits) * 5)
 
-        tool_hits = ATSUtils.find_keyword_hits(text, jd.required_tools)
-        tool_score = min(ATSScorer.WEIGHTS["tool_alignment"], len(tool_hits) * 5)
+    truthfulness_score = ATSScorer.WEIGHTS["truthfulness"]
+    if len(text) > max(40, len(original_text) * 2.2):
+        truthfulness_score -= 4
+    if text.count(";") > 1:
+        truthfulness_score -= 2
 
-        readability_score = ATSScorer.WEIGHTS["readability"]
-        if len(text.split()) < 4 or len(text.split()) > 35:
-            readability_score -= 3
-        if re.search(r"\b(results-driven|dynamic|synergy|go-getter|hardworking)\b", text, flags=re.I):
-            readability_score -= 3
+    tool_hits = ATSUtils.find_keyword_hits(text, jd.required_tools)
+    tool_score = min(ATSScorer.WEIGHTS["tool_alignment"], len(tool_hits) * 5)
 
-        specificity_score = ATSScorer.WEIGHTS["specificity"]
-        if not re.search(r"\d", text):
-            specificity_score -= 4
-        if len(text.split()) < 5:
-            specificity_score -= 2
+    readability_score = ATSScorer.WEIGHTS["readability"]
+    if len(text.split()) < 4 or len(text.split()) > 35:
+        readability_score -= 3
+    if re.search(r"\b(results-driven|dynamic|synergy|go-getter|hardworking)\b", text, flags=re.I):
+        readability_score -= 3
 
-        parser_score = ATSScorer.WEIGHTS["parser_friendliness"]
-        if re.search(r"[|¦•►◆■✔]", text):
-            parser_score -= 4
+    specificity_score = ATSScorer.WEIGHTS["specificity"]
+    if not re.search(r"\d", text):
+        specificity_score -= 4
+    if len(text.split()) < 5:
+        specificity_score -= 2
 
-        length_score = ATSScorer.WEIGHTS["length_control"]
-        if max_chars is not None and len(text) > max_chars:
-            length_score = max(0, length_score - 5)
+    parser_score = ATSScorer.WEIGHTS["parser_friendliness"]
+    if re.search(r"[|¦•►◆■✔]", text):
+        parser_score -= 4
 
-        total = (
-            keyword_score
-            + max(0, truthfulness_score)
-            + tool_score
-            + max(0, readability_score)
-            + max(0, specificity_score)
-            + max(0, parser_score)
-            + max(0, length_score)
-        )
-        return max(0, min(100, int(total)))
+    selected_norm = {ATSUtils.normalize_token(k) for k in selected_keywords}
+    non_selected_hits = [
+        kw for kw in ATSUtils.find_keyword_hits(text, jd.ats_critical_terms)
+        if ATSUtils.normalize_token(kw) not in selected_norm
+    ]
+    if non_selected_hits:
+        parser_score -= min(5, len(non_selected_hits))
+
+    length_score = ATSScorer.WEIGHTS["length_control"]
+    if max_chars is not None and len(text) > max_chars:
+        length_score = max(0, length_score - 5)
+
+    total = (
+        keyword_score
+        + selected_keyword_score
+        + max(0, truthfulness_score)
+        + tool_score
+        + max(0, readability_score)
+        + max(0, specificity_score)
+        + max(0, parser_score)
+        + max(0, length_score)
+    )
+    return max(0, min(100, int(total)))
 
 
 class ResumeRewritePrompts:
@@ -617,8 +631,17 @@ Rules:
 - identify terms that are likely ATS-critical
 - return ONLY valid JSON
 
+Rank all extracted JD keywords by ATS importance and return:
+- required_keywords
+- preferred_keywords
+- high_priority_missing
+- medium_priority_missing
+- low_priority_missing
+- recommended_keyword_targets
+
+Recommended keyword targets should be the best truthful terms to prioritize first in rewrites.
 Format:
-{{
+{
   "core_role_function": "",
   "primary_business_objective": "",
   "required_skills": [],
@@ -629,55 +652,61 @@ Format:
   "required_qualifications": [],
   "preferred_qualifications": [],
   "repeated_keywords": [],
-  "synonyms_and_variants": {{
+  "synonyms_and_variants": {
     "keyword_from_jd": ["variant1", "variant2"]
-  }},
+  },
   "implied_screening_signals": [],
   "metrics_kpi_language": [],
-  "ats_critical_terms": []
-}}
+  "ats_critical_terms": [],
+  "required_keywords": [],
+  "preferred_keywords": [],
+  "high_priority_missing": [],
+  "medium_priority_missing": [],
+  "low_priority_missing": [],
+  "recommended_keyword_targets": []
+}
 
 Job description:
 {job_description}
 """.strip()
 
-    @staticmethod
-    def build_line_rewrite_prompt(
-        line_index: int,
-        original_line: str,
-        job_description: str,
-        ats_priority_keywords: Optional[List[str]] = None,
-        surrounding_before: Optional[List[str]] = None,
-        surrounding_after: Optional[List[str]] = None,
-        max_chars: Optional[int] = None,
-        n_options: int = 3,
-    ) -> str:
-        surrounding_before = surrounding_before or []
-        surrounding_after = surrounding_after or []
-        ats_priority_keywords = ats_priority_keywords or []
+@staticmethod
+def build_line_rewrite_prompt(
+    line_index: int,
+    original_line: str,
+    job_description: str,
+    selected_keywords: Optional[List[str]] = None,
+    surrounding_before: Optional[List[str]] = None,
+    surrounding_after: Optional[List[str]] = None,
+    max_chars: Optional[int] = None,
+    n_options: int = 3,
+) -> str:
+    surrounding_before = surrounding_before or []
+    surrounding_after = surrounding_after or []
+    selected_keywords = selected_keywords or []
 
-        char_rule = f"Keep length <= {max_chars} chars." if max_chars else "Keep length close to original."
-        options_schema = ",\n".join([
-            """    {
+    char_rule = f"Keep length <= {max_chars} chars." if max_chars else "Keep length close to original."
+    options_schema = ",\n".join([
+        """    {
       "text": "",
       "keywords_added": [],
       "score": 0,
       "why_it_works": ""
     }""" for _ in range(n_options)
-        ])
+    ])
 
-        return f"""
-Rewrite this single resume line to maximize truthful ATS alignment with the job description.
+    return f"""
+Rewrite this single resume line to maximize truthful ATS alignment.
 
-You must:
-- preserve truth
-- preserve original meaning
-- keep resume tone/style
-- improve keyword alignment naturally
-- improve specificity and clarity
-- avoid keyword stuffing
-- avoid AI-sounding phrasing
-- {char_rule}
+CRITICAL RULES
+1. Use ONLY keywords from the SELECTED KEYWORDS list when adding ATS language.
+2. Do not add any keyword unless it fits truthfully.
+3. Do not invent tools, certifications, metrics, industries, scope, or outcomes.
+4. Prefer exact selected keyword phrases where natural.
+5. If none of the selected keywords fit, return conservative rewrites and explain that.
+6. Avoid keyword stuffing and AI-sounding phrasing.
+7. Preserve original meaning and resume tone.
+8. {char_rule}
 
 Evaluate this line against:
 - exact keyword match
@@ -693,8 +722,10 @@ Return ONLY valid JSON:
   "line_index": {line_index},
   "original": {json.dumps(original_line, ensure_ascii=False)},
   "analysis": {{
+    "selected_keywords_considered": {json.dumps(selected_keywords, ensure_ascii=False)},
+    "selected_keywords_used": [],
+    "selected_keywords_not_used": [],
     "main_gap": "",
-    "missing_keywords_that_fit_truthfully": [],
     "risk_of_overclaiming": []
   }},
   "options": [
@@ -706,8 +737,8 @@ Context before: {json.dumps(surrounding_before, ensure_ascii=False)}
 Target line: {json.dumps(original_line, ensure_ascii=False)}
 Context after: {json.dumps(surrounding_after, ensure_ascii=False)}
 
-ATS priority keywords:
-{json.dumps(ats_priority_keywords, ensure_ascii=False)}
+SELECTED KEYWORDS:
+{json.dumps(selected_keywords, ensure_ascii=False)}
 
 Job description:
 {job_description}
@@ -814,41 +845,49 @@ class ATSReviewEngine:
                 )
         return suggestions
 
-    def build_line_prompt(self, line_index: int, job_description: str, jd: JDAnalysis) -> str:
-        line = self.processor.get_line(line_index)
-        if line is None:
-            raise IndexError(f"Invalid line_index: {line_index}")
+def build_line_prompt(
+    self,
+    line_index: int,
+    job_description: str,
+    jd: JDAnalysis,
+    selected_keywords: Optional[List[str]] = None,
+) -> str:
+    line = self.processor.get_line(line_index)
+    if line is None:
+        raise IndexError(f"Invalid line_index: {line_index}")
 
-        context = self.processor.get_context_window(line_index, window=1)
-        return ResumeRewritePrompts.build_line_rewrite_prompt(
-            line_index=line_index,
-            original_line=line.text,
-            job_description=job_description,
-            ats_priority_keywords=jd.ats_critical_terms,
-            surrounding_before=context.get("before", []),
-            surrounding_after=context.get("after", []),
-            max_chars=max(line.char_count + 20, int(line.char_count * 1.3)),
-        )
+    context = self.processor.get_context_window(line_index, window=1)
+    return ResumeRewritePrompts.build_line_rewrite_prompt(
+        line_index=line_index,
+        original_line=line.text,
+        job_description=job_description,
+        selected_keywords=selected_keywords or [],
+        surrounding_before=context.get("before", []),
+        surrounding_after=context.get("after", []),
+        max_chars=max(line.char_count + 20, int(line.char_count * 1.3)),
+    )
 
-    def parse_line_options(
-        self,
-        raw_model_output: str,
-        jd: JDAnalysis,
-        original_line: str,
-        max_chars: Optional[int] = None,
-    ) -> Dict[str, Any]:
+def parse_line_options(
+    self,
+    raw_model_output: str,
+    jd: JDAnalysis,
+    original_line: str,
+    max_chars: Optional[int] = None,
+    selected_keywords: Optional[List[str]] = None,
+) -> Dict[str, Any]:
         data = ATSUtils.safe_parse_json(raw_model_output)
         options = []
         for option in data.get("options", []):
             text = ATSUtils.clean_text(option.get("text", ""))
             if not text:
                 continue
-            score = ATSScorer.score_rewrite_option(
-                original=original_line,
-                option=text,
-                jd=jd,
-                max_chars=max_chars,
-            )
+score = ATSScorer.score_rewrite_option(
+    original=original_line,
+    option=text,
+    jd=jd,
+    max_chars=max_chars,
+    selected_keywords=selected_keywords or [],
+)
             options.append(
                 RewriteOption(
                     text=text,
