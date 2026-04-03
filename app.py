@@ -1013,26 +1013,31 @@ with utility_col1:
                 for line in st.session_state.resume_processor.get_all_lines()
                 if line["text"].strip()
             )
+
             st.toast("Analyzing resume…", icon="⚡")
             with st.spinner("Analyzing ATS match..."):
                 try:
                     ats_analysis = client.analyze_ats(resume_text, job_description)
+
+                    default_selected = (
+                        ats_analysis.get("recommended_keyword_targets")
+                        or ats_analysis.get("high_priority_missing")
+                        or ats_analysis.get("missing_keywords")
+                        or []
+                    )
+
                     st.session_state.ats_analysis = ats_analysis
                     st.session_state.selected_keywords = default_selected[:12]
                     st.session_state.suggestions = []
                     st.session_state.choices_made = {}
                     st.session_state.tailored_docx_bytes = None
                     st.session_state.pdf_bytes = None
+
                     st.success("ATS analysis complete.")
+
                 except Exception as e:
                     st.error(f"ATS analysis failed: {e}")
-                    default_selected = (
-    ats_analysis.get("recommended_keyword_targets")
-    or ats_analysis.get("high_priority_missing")
-    or ats_analysis.get("missing_keywords")
-    or []
-)
-st.session_state.selected_keywords = default_selected[:12]
+
 
 with utility_col2:
     if st.button("Reset", use_container_width=True):
