@@ -76,50 +76,53 @@ st.markdown(
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
 
-  /* ---------- FIXED LOGIN OVERLAY ---------- */
-  .login-root {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
+  /* ---------- PREMIUM LOGIN ---------- */
+   .login-page {
+    min-height: 100vh;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 1rem;
-    background:
-      radial-gradient(circle at 20% 15%, rgba(79,139,255,0.14), transparent 32%),
-      radial-gradient(circle at 80% 80%, rgba(79,139,255,0.10), transparent 30%),
-      rgba(5, 8, 15, 0.96);
+    padding-top: 7vh;
     overflow: hidden;
   }
 
   .login-shell {
     width: 100%;
-    max-width: 400px;
   }
 
-  .login-card {
-    border-radius: 28px;
-    padding: 1.4rem 1.2rem 1.15rem;
+  .login-card-premium {
+    border-radius: 30px;
+    padding: 1.35rem 1.25rem 1.15rem;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025)),
-      rgba(10,16,30,0.90);
-    border: 1px solid rgba(255,255,255,0.07);
+      rgba(10,16,30,0.88);
+    border: 1px solid rgba(255,255,255,0.06);
     box-shadow:
-      0 24px 80px rgba(0,0,0,0.48),
+      0 24px 80px rgba(0,0,0,0.45),
       inset 0 1px 0 rgba(255,255,255,0.05);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    text-align: center;
+    margin-bottom: 0.9rem;
+  }
+
+  .login-form-card {
+    border-radius: 24px;
+    padding: 1rem;
+    background: rgba(10,16,30,0.70);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 18px 50px rgba(0,0,0,0.30);
   }
 
   .login-top {
     text-align: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.4rem;
   }
 
   .login-badge {
     width: 58px;
     height: 58px;
-    margin: 0 auto 0.8rem;
+    margin: 0 auto 0.75rem;
     border-radius: 18px;
     display: flex;
     align-items: center;
@@ -136,7 +139,7 @@ st.markdown(
 
   .login-title {
     font-family: var(--font-head);
-    font-size: 1.9rem;
+    font-size: 1.85rem;
     font-weight: 800;
     letter-spacing: -0.06em;
     color: #fff;
@@ -148,8 +151,14 @@ st.markdown(
     font-size: 0.92rem;
     color: var(--muted);
     line-height: 1.55;
-    max-width: 300px;
+    max-width: 310px;
     margin: 0 auto;
+  }
+
+  .login-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    margin: 1rem 0 0.2rem;
   }
 
   .login-mini-pill-row {
@@ -157,7 +166,7 @@ st.markdown(
     justify-content: center;
     gap: 0.45rem;
     flex-wrap: wrap;
-    margin-top: 0.95rem;
+    margin-top: 0.9rem;
   }
 
   .login-mini-pill {
@@ -170,19 +179,13 @@ st.markdown(
     font-weight: 600;
   }
 
-  .login-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
-    margin: 1rem 0 0.95rem;
-  }
-
   .auth-field-label {
     font-size: 0.74rem;
     color: #a8b4c7;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    margin: 0.15rem 0 0.35rem;
+    margin: 0.1rem 0 0.35rem;
   }
 
   div[data-testid="stTextInput"] input {
@@ -232,19 +235,6 @@ st.markdown(
     color: #6e7b8f;
   }
 
-  @media (max-width: 640px) {
-    .login-root {
-      padding: 0.75rem;
-    }
-
-    .login-card {
-      padding: 1.15rem 1rem 1rem;
-      border-radius: 24px;
-    }
-
-    .login-title {
-      font-size: 1.65rem;
-    }
 
   .topbar {
     display: flex;
