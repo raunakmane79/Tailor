@@ -859,56 +859,59 @@ def check_password():
         else:
             st.session_state["_auth_fail"] = True
 
-    st.markdown('<div class="login-page">', unsafe_allow_html=True)
-    left, center, right = st.columns([1, 1.15, 1])
+    st.markdown('<div class="login-page"><div class="login-shell"><div class="login-card-premium">', unsafe_allow_html=True)
 
-    with center:
-        st.markdown(
-            """
-            <div class="login-card">
-                <div class="login-brand">
-                    <div class="login-logo">✦</div>
-                    <div class="login-title-wrap">
-                        <div class="login-title">Rizzume</div>
-                        <div class="login-sub">Secure access to your resume tailoring workspace.</div>
-                    </div>
-                </div>
-            """,
-            unsafe_allow_html=True,
+    st.markdown(
+        """
+        <div class="login-top">
+            <div class="login-badge">✦</div>
+            <div class="login-title">Rizzume</div>
+            <div class="login-sub">
+                Secure access to your premium resume tailoring workspace.
+            </div>
+            <div class="login-mini-pill-row">
+                <div class="login-mini-pill">ATS Match</div>
+                <div class="login-mini-pill">AI Rewrites</div>
+                <div class="login-mini-pill">DOCX Export</div>
+            </div>
+        </div>
+        <div class="login-divider"></div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
+        st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
+        st.text_input(
+            "Log In ID",
+            key="login_id_input",
+            label_visibility="collapsed",
+            placeholder="Enter any ID",
         )
 
-        st.markdown('<div class="login-form-wrap">', unsafe_allow_html=True)
+        st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
+        st.text_input(
+            "Password",
+            type="password",
+            key="pw_input",
+            label_visibility="collapsed",
+            placeholder="Enter password",
+        )
 
-        with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
-            st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
-            st.text_input(
-                "Log In ID",
-                key="login_id_input",
-                label_visibility="collapsed",
-                placeholder="Enter any ID",
-            )
+        submitted = st.form_submit_button("Enter Workspace ✦", use_container_width=True)
 
-            st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
-            st.text_input(
-                "Password",
-                type="password",
-                key="pw_input",
-                label_visibility="collapsed",
-                placeholder="Enter password",
-            )
+        if submitted:
+            _authenticate()
 
-            submitted = st.form_submit_button("Enter ✦", use_container_width=True)
+    if st.session_state.get("_auth_fail"):
+        st.error("Incorrect password. Please try again.")
 
-            if submitted:
-                _authenticate()
+    st.markdown(
+        '<div class="login-note">Private workspace • Authorized access only</div>',
+        unsafe_allow_html=True,
+    )
 
-        if st.session_state.get("_auth_fail"):
-            st.error("Incorrect password. Please try again.")
-
-        st.markdown('<div class="auth-footnote">Protected access</div>', unsafe_allow_html=True)
-        st.markdown('</div></div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div></div></div>', unsafe_allow_html=True)
     return False
 
 
