@@ -489,19 +489,26 @@ import re
 # ---------------------------------------------------
 def reset_state_for_new_file():
     for k in ["ats_analysis", "suggestions", "choices_made", "pdf_bytes",
-              "tailored_docx_bytes", "selected_keywords", "editor_text"]:
-        st.session_state[k] = None if k not in ["suggestions", "choices_made",
-                                                  "selected_keywords"] else ([] if k != "choices_made" else {})
+              "tailored_docx_bytes", "selected_keywords", "line_edits"]:
+        if k in ["suggestions", "selected_keywords"]:
+            st.session_state[k] = []
+        elif k == "choices_made":
+            st.session_state[k] = {}
+        elif k == "line_edits":
+            st.session_state[k] = {}
+        else:
+            st.session_state[k] = None
 
 
 def full_reset():
     for k in ["resume_processor", "ats_analysis", "suggestions", "choices_made",
               "pdf_bytes", "tailored_docx_bytes", "uploaded_filename",
-              "uploaded_file_signature", "selected_keywords", "editor_text"]:
+              "uploaded_file_signature", "selected_keywords", "line_edits"]:
         st.session_state[k] = None
     st.session_state["suggestions"] = []
     st.session_state["choices_made"] = {}
     st.session_state["selected_keywords"] = []
+    st.session_state["line_edits"] = {}
 
 
 def show_empty_state(msg):
@@ -544,18 +551,6 @@ def convert_docx_to_pdf_bytes(docx_bytes):
             return f.read()
 
 
-def docx_to_text_for_editor(processor):
-    """Extract text from resume lines for the inline editor."""
-    lines = processor.get_all_lines()
-    return "\n".join(line["text"] for line in lines if line["text"].strip())
-
-
-def make_gdocs_import_link(docx_bytes, filename):
-    """Create a data URI link (opens in browser for saving); also provide download."""
-    b64 = base64.b64encode(docx_bytes).decode()
-    return b64
-
-
 SOFFICE_AVAILABLE = shutil.which("soffice") is not None
 
 try:
@@ -573,8 +568,8 @@ defaults = {
     "resume_processor": None, "ats_analysis": None, "suggestions": [],
     "choices_made": {}, "pdf_bytes": None, "tailored_docx_bytes": None,
     "uploaded_filename": None, "uploaded_file_signature": None,
-    "selected_keywords": [], "editor_text": None,
-    "_loading_stage": None, "_loading_pct": 0,
+    "selected_keywords": [],
+    "_loading_stage": None, "_loading_pct": 0, "line_edits": {},
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -938,22 +933,21 @@ if st.session_state.suggestions:
     ap1, _ = st.columns([1, 4], gap="large")
     with ap1:
         if st.button("Apply Selected Changes", use_container_width=True):
-            proc = st.session_state.resume_processor
-            if proc is None:
+            if st.session_state.resume_processor is None:
                 st.error("Resume processor not found. Re-upload your resume.")
             else:
                 try:
-                    proc = ResumeProcessor(uploaded_file.getvalue()) if uploaded_file else proc
+                    fresh_proc = ResumeProcessor(uploaded_file.getvalue()) if uploaded_file else ResumeProcessor(st.session_state.resume_processor.export())
                     for i, sug in enumerate(st.session_state.suggestions):
                         chosen_text = st.session_state.choices_made.get(i)
                         if chosen_text:
-                            proc.replace_line(sug["line_index"], chosen_text)
-                    st.session_state.resume_processor = proc
-                    st.session_state.tailored_docx_bytes = proc.export()
+                            fresh_proc.replace_line(sug["line_index"], chosen_text)
+                    st.session_state.resume_processor = fresh_proc
+                    st.session_state.tailored_docx_bytes = fresh_proc.export()
                     st.session_state.pdf_bytes = None
-                    st.session_state.editor_text = docx_to_text_for_editor(proc)
+                    st.session_state.line_edits = {}  # reset so editor re-reads new lines
                     render_loading_bar("Changes applied — ready to edit & export", 90)
-                    st.success("Changes applied. Review in the editor below.")
+                    st.success("Changes applied. Review and fine-tune in the editor below.")
                 except Exception as e:
                     st.error(f"Failed to apply changes: {e}")
 
@@ -962,150 +956,134 @@ if st.session_state.suggestions:
 # STEP 4 — INLINE EDITOR + EXPORT
 # ---------------------------------------------------
 if st.session_state.resume_processor is not None:
-    current_docx = (
-        st.session_state.tailored_docx_bytes
-        if st.session_state.tailored_docx_bytes is not None
-        else st.session_state.resume_processor.export()
-    )
 
     lines = st.session_state.resume_processor.get_all_lines()
     name_part = extract_name_from_resume(lines)
     job_part = extract_job_title(job_description if job_description else "")
     file_stem = f"{name_part}_{job_part}_Resume"
 
-    # Inline editor section
     st.markdown(
         """
 <div class="sec-card">
   <div class="step-tag">Step 04</div>
   <div class="sec-title">Review, Edit & Export</div>
-  <div class="sec-sub">Make final tweaks in the inline editor, then download as DOCX or PDF — or open directly in Google Docs.</div>
+  <div class="sec-sub">
+    Review and tweak individual lines below. Your <strong style="color:#c5daff">original DOCX formatting</strong>
+    (fonts, spacing, layout) is always preserved in the download — this editor lets you correct
+    any line text before exporting.
+  </div>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
-    # Initialize editor text
-    if st.session_state.editor_text is None:
-        st.session_state.editor_text = docx_to_text_for_editor(st.session_state.resume_processor)
+    # ── PER-LINE TEXT EDITOR ──────────────────────────────────────────────
+    # Shows every non-empty line as an editable text_input.
+    # Changes are stored in session_state and applied to the processor on demand.
 
-    # Inline rich-text editor (contenteditable via HTML component)
-    editor_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  * {{ margin:0; padding:0; box-sizing:border-box; }}
-  body {{ background: #13192a; font-family: 'DM Sans', sans-serif; }}
-
-  .toolbar {{
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    padding: 10px 14px; background: #1a2236;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-  }}
-  .tb-btn {{
-    padding: 5px 10px; border-radius: 7px; cursor: pointer;
-    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-    color: #c8d4e3; font-size: 12px; font-weight: 700;
-    transition: all 0.15s; font-family: 'DM Sans', sans-serif;
-  }}
-  .tb-btn:hover {{ background: rgba(79,139,255,0.22); border-color: rgba(79,139,255,0.45); color: #fff; }}
-  .sep {{ width:1px; height:20px; background: rgba(255,255,255,0.1); margin: 0 4px; }}
-  .tb-label {{ font-size: 11px; color: #5a6880; font-weight: 600; }}
-
-  .editor {{
-    background: #fff; color: #1a1a2e;
-    min-height: 500px; padding: 28px 36px;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 13.5px; line-height: 1.75; outline: none;
-    white-space: pre-wrap; overflow-y: auto;
-    border-bottom-left-radius: 0; border-bottom-right-radius: 0;
-  }}
-  .editor:focus {{ outline: none; }}
-
-  .statusbar {{
-    padding: 7px 14px; background: #1a2236;
-    border-top: 1px solid rgba(255,255,255,0.07);
-    display: flex; justify-content: space-between; align-items: center;
-  }}
-  .status-text {{ font-size: 11px; color: #5a6880; }}
-  .save-btn {{
-    padding: 6px 14px; border-radius: 8px; cursor: pointer;
-    background: linear-gradient(135deg, #3a74f0, #5d95ff);
-    border: none; color: #fff; font-size: 12px; font-weight: 700;
-    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
-    box-shadow: 0 4px 12px rgba(79,139,255,0.3);
-  }}
-  .save-btn:hover {{ filter: brightness(1.1); transform: translateY(-1px); }}
-</style>
-</head>
-<body>
-<div class="toolbar">
-  <span class="tb-label">Format:</span>
-  <button class="tb-btn" onclick="document.execCommand('bold')"><b>B</b></button>
-  <button class="tb-btn" onclick="document.execCommand('italic')"><i>I</i></button>
-  <button class="tb-btn" onclick="document.execCommand('underline')"><u>U</u></button>
-  <div class="sep"></div>
-  <button class="tb-btn" onclick="document.execCommand('justifyLeft')">⬤Left</button>
-  <button class="tb-btn" onclick="document.execCommand('justifyCenter')">⬤Center</button>
-  <div class="sep"></div>
-  <button class="tb-btn" onclick="document.execCommand('insertUnorderedList')">• List</button>
-  <button class="tb-btn" onclick="document.execCommand('insertOrderedList')">1. List</button>
-  <div class="sep"></div>
-  <button class="tb-btn" onclick="document.execCommand('undo')">↩ Undo</button>
-  <button class="tb-btn" onclick="document.execCommand('redo')">↪ Redo</button>
-  <div class="sep"></div>
-  <select class="tb-btn" onchange="document.execCommand('fontSize', false, this.value)">
-    <option value="2">Small</option>
-    <option value="3" selected>Normal</option>
-    <option value="4">Large</option>
-    <option value="5">XL</option>
-  </select>
+    st.markdown(
+        """
+<div style="background:rgba(79,139,255,0.06);border:1px solid rgba(79,139,255,0.16);
+            border-radius:16px;padding:1rem 1.2rem;margin-bottom:1rem;">
+  <span style="font-size:0.85rem;color:#a8c4ff;font-weight:600;">
+    ✏️ Edit any line below, then click <strong>Apply Line Edits → Rebuild DOCX</strong> to bake your changes in.
+    The download will always reflect the latest rebuild. Original formatting (bold, fonts, spacing) is preserved.
+  </span>
 </div>
+""",
+        unsafe_allow_html=True,
+    )
 
-<div class="editor" id="editor" contenteditable="true" spellcheck="true">{st.session_state.editor_text or ""}</div>
+    all_lines = st.session_state.resume_processor.get_all_lines()
+    editable_lines = [l for l in all_lines if l["text"].strip()]
 
-<div class="statusbar">
-  <span class="status-text" id="wordcount">Ready to edit</span>
-  <button class="save-btn" onclick="saveContent()">Save Changes</button>
-</div>
+    if "line_edits" not in st.session_state:
+        st.session_state.line_edits = {}
 
-<script>
-  const editor = document.getElementById('editor');
-  const wc = document.getElementById('wordcount');
+    # Initialise line_edits with current text if not already set
+    for l in editable_lines:
+        idx = l["index"]
+        if idx not in st.session_state.line_edits:
+            st.session_state.line_edits[idx] = l["text"]
 
-  function updateWordCount() {{
-    const text = editor.innerText || '';
-    const words = text.trim().split(/\\s+/).filter(w => w.length > 0).length;
-    wc.textContent = words + ' words · ' + text.length + ' characters';
-  }}
+    # Render editor rows in a styled container
+    st.markdown('<div style="border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:1rem;">', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="background:#1a2236;padding:0.65rem 1.1rem;border-bottom:1px solid rgba(255,255,255,0.07);">'
+        '<span style="font-size:0.75rem;font-weight:700;color:#7a90b0;text-transform:uppercase;letter-spacing:0.09em;">'
+        'Line Editor — every line from your resume</span></div>',
+        unsafe_allow_html=True,
+    )
 
-  editor.addEventListener('input', updateWordCount);
-  updateWordCount();
+    for l in editable_lines:
+        idx = l["index"]
+        col_idx, col_edit = st.columns([0.08, 0.92], gap="small")
+        with col_idx:
+            st.markdown(
+                f'<div style="padding:0.55rem 0;text-align:center;font-size:0.72rem;'
+                f'font-weight:700;color:#4a5a72;font-family:var(--font-mono);">{idx}</div>',
+                unsafe_allow_html=True,
+            )
+        with col_edit:
+            new_val = st.text_input(
+                label=f"line_{idx}",
+                value=st.session_state.line_edits.get(idx, l["text"]),
+                key=f"le_{idx}",
+                label_visibility="collapsed",
+            )
+            st.session_state.line_edits[idx] = new_val
 
-  function saveContent() {{
-    const text = editor.innerText;
-    window.parent.postMessage({{ type: 'editor_save', text: text }}, '*');
-    wc.textContent = '✓ Saved!';
-    setTimeout(updateWordCount, 1500);
-  }}
-</script>
-</body>
-</html>
-"""
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.components.v1.html(editor_html, height=580, scrolling=False)
+    # ── APPLY LINE EDITS → REBUILD DOCX ──────────────────────────────────
+    apply_col, _ = st.columns([1, 3], gap="large")
+    with apply_col:
+        if st.button("✅ Apply Line Edits → Rebuild DOCX", use_container_width=True):
+            try:
+                # Re-create processor from original uploaded bytes to avoid stacking edits
+                if uploaded_file is not None:
+                    fresh_proc = ResumeProcessor(uploaded_file.getvalue())
+                else:
+                    fresh_proc = ResumeProcessor(st.session_state.resume_processor.export())
 
-    st.caption("💡 Use the toolbar to format text. Click **Save Changes** to sync before exporting.")
+                # First apply any AI-suggestion choices
+                for i, sug in enumerate(st.session_state.suggestions):
+                    chosen_text = st.session_state.choices_made.get(i)
+                    if chosen_text:
+                        fresh_proc.replace_line(sug["line_index"], chosen_text)
 
-    # ── EXPORT OPTIONS ──
+                # Then apply manual line edits on top
+                for idx, new_text in st.session_state.line_edits.items():
+                    original_text = next(
+                        (l["text"] for l in all_lines if l["index"] == idx), None
+                    )
+                    if original_text is not None and new_text != original_text:
+                        fresh_proc.replace_line(idx, new_text)
+
+                st.session_state.resume_processor = fresh_proc
+                st.session_state.tailored_docx_bytes = fresh_proc.export()
+                st.session_state.pdf_bytes = None
+                render_loading_bar("DOCX rebuilt with your edits — ready to export", 95)
+                st.success("DOCX rebuilt. Download buttons below are now up to date.")
+            except Exception as e:
+                st.error(f"Failed to rebuild DOCX: {e}")
+
+    # Always use the latest tailored bytes if available, else export current state
+    current_docx = (
+        st.session_state.tailored_docx_bytes
+        if st.session_state.tailored_docx_bytes is not None
+        else st.session_state.resume_processor.export()
+    )
+
+    # ── EXPORT OPTIONS ────────────────────────────────────────────────────
     st.markdown(
         """
 <div class="dl-card">
   <div class="dl-title">Export Your Tailored Resume</div>
-  <div class="dl-sub">Download as DOCX, generate a PDF, or open directly in Google Docs for cloud editing.</div>
+  <div class="dl-sub">
+    The DOCX download preserves your original formatting exactly.
+    Generate a PDF server-side, or open Google Drive's upload page to import your file into Google Docs.
+  </div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -1114,6 +1092,11 @@ if st.session_state.resume_processor is not None:
     d1, d2, d3 = st.columns(3, gap="large")
 
     with d1:
+        st.markdown(
+            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;'
+            'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Word Document</div>',
+            unsafe_allow_html=True,
+        )
         st.download_button(
             label="⬇ Download DOCX",
             data=current_docx,
@@ -1121,8 +1104,18 @@ if st.session_state.resume_processor is not None:
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True,
         )
+        st.markdown(
+            '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">'
+            'Full formatting preserved — fonts, spacing, layout all intact.</div>',
+            unsafe_allow_html=True,
+        )
 
     with d2:
+        st.markdown(
+            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;'
+            'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">PDF Export</div>',
+            unsafe_allow_html=True,
+        )
         if SOFFICE_AVAILABLE:
             if st.button("⚙ Generate PDF", use_container_width=True):
                 render_loading_bar("Converting to PDF…", 85)
@@ -1130,7 +1123,7 @@ if st.session_state.resume_processor is not None:
                     try:
                         st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx)
                         render_loading_bar("PDF ready!", 100)
-                        st.success("PDF generated.")
+                        st.success("PDF ready to download.")
                     except Exception as e:
                         st.error(f"PDF conversion failed: {e}")
             if st.session_state.pdf_bytes:
@@ -1141,32 +1134,56 @@ if st.session_state.resume_processor is not None:
                     mime="application/pdf",
                     use_container_width=True,
                 )
+            else:
+                st.markdown(
+                    '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">'
+                    'Click Generate PDF first, then the download button appears.</div>',
+                    unsafe_allow_html=True,
+                )
         else:
-            st.caption("PDF export unavailable on this deployment (LibreOffice not installed).")
+            st.markdown(
+                '<div style="font-size:0.84rem;color:#5a6880;padding:0.6rem 0;line-height:1.6;">'
+                'PDF export unavailable — LibreOffice not installed on this deployment.</div>',
+                unsafe_allow_html=True,
+            )
 
     with d3:
-        # Google Docs import link
-        b64_docx = base64.b64encode(current_docx).decode()
-        gdocs_note = """
-<div style="background:rgba(79,139,255,0.08);border:1px solid rgba(79,139,255,0.2);border-radius:14px;padding:1rem 1.1rem;">
-  <div style="font-size:0.82rem;font-weight:700;color:#c5daff;margin-bottom:0.4rem;">📄 Open in Google Docs</div>
-  <div style="font-size:0.84rem;color:#8a96a8;line-height:1.65;margin-bottom:0.7rem;">
-    1. Download the DOCX file above<br>
-    2. Go to <strong style="color:#c5daff">docs.google.com</strong><br>
-    3. Click <em>File → Open</em> and upload the DOCX<br>
-    Google Docs will convert it automatically.
-  </div>
-  <a href="https://docs.google.com/document/create" target="_blank"
-     style="display:inline-block;padding:0.52rem 0.9rem;border-radius:10px;
+        st.markdown(
+            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;'
+            'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Google Docs</div>',
+            unsafe_allow_html=True,
+        )
+        # The most reliable way to get a file into Google Docs is:
+        # 1. User downloads the DOCX  (already available above)
+        # 2. Opens drive.google.com/drive/upload which opens the Drive file picker/upload
+        # 3. After uploading, right-click → Open with Google Docs
+        # We provide a direct link to Google Drive's "New" upload page.
+        gdocs_html = f"""
+<div style="background:rgba(79,139,255,0.07);border:1px solid rgba(79,139,255,0.18);
+            border-radius:16px;padding:1rem 1.1rem;">
+  <ol style="font-size:0.83rem;color:#9ab0cc;line-height:1.8;margin:0 0 0.85rem 1.1rem;padding:0;">
+    <li>Download the <strong style="color:#c5daff">DOCX</strong> using the button on the left</li>
+    <li>Click the button below — Google Drive upload page opens</li>
+    <li>Upload the DOCX, then right-click → <em>Open with Google Docs</em></li>
+  </ol>
+  <a href="https://drive.google.com/drive/my-drive?action=newfile" target="_blank"
+     style="display:flex;align-items:center;justify-content:center;gap:0.5rem;
+            padding:0.7rem 1rem;border-radius:12px;
             background:linear-gradient(135deg,#3a74f0,#5d95ff);color:#fff;
-            font-size:0.83rem;font-weight:700;text-decoration:none;
-            box-shadow:0 6px 16px rgba(79,139,255,0.3);">
-    Open Google Docs ↗
+            font-size:0.88rem;font-weight:700;text-decoration:none;
+            box-shadow:0 6px 18px rgba(79,139,255,0.32);transition:all 0.15s;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 5v14M5 12l7-7 7 7" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Open Google Drive Upload ↗
   </a>
 </div>
 """
-        st.markdown(gdocs_note, unsafe_allow_html=True)
+        st.markdown(gdocs_html, unsafe_allow_html=True)
 
     render_loading_bar("All done — resume tailored ✦", 100)
 
-st.markdown('<div class="footer-note">Rizzume ✦ — tailor faster, keep formatting, ship a cleaner application.</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="footer-note">Rizzume ✦ — tailor faster, keep formatting, ship a cleaner application.</div>',
+    unsafe_allow_html=True,
+)
