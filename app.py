@@ -685,7 +685,30 @@ st.markdown(
   }
 
   div[data-baseweb="notification"] { border-radius: 16px !important; }
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.login-card {
+  border-radius: 28px;
+  padding: 2rem 1.6rem 1.5rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.40);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.login-form-wrap {
+  border-radius: 20px;
+  padding: 1.2rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+}
   @media (max-width: 1000px) {
     .hero-grid { grid-template-columns: 1fr; }
     .topbar { flex-direction: column; align-items: flex-start; }
@@ -725,8 +748,7 @@ def check_password():
             st.session_state["_auth_fail"] = True
 
     st.markdown('<div class="login-page">', unsafe_allow_html=True)
-    _, center, _ = st.columns([1.2, 1, 1.2])
-
+    _, center, _ = st.columns([0.9, 1.4, 0.9])
     with center:
         st.markdown(
             """
@@ -776,6 +798,8 @@ def check_password():
 
     st.markdown('</div>', unsafe_allow_html=True)
     return False
+    if not check_password():
+    st.stop()
 # ---------------------------------------------------
 # REMAINING IMPORTS (only after auth)
 # ---------------------------------------------------
