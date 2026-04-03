@@ -291,7 +291,7 @@ class ATSUtils:
         if not isinstance(text, str):
             return ""
         text = text.strip()
-        text = text.replace("“", '"').replace("”", '"').replace("’", "'")
+        text = text.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
         text = re.sub(r"\s+", " ", text)
         return text
 
@@ -324,7 +324,7 @@ class ATSUtils:
 
         cleaned = raw.strip()
         cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.IGNORECASE | re.DOTALL)
-        cleaned = cleaned.replace("“", '"').replace("”", '"').replace("’", "'")
+        cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"').replace("\u2019", "'")
         cleaned = re.sub(r",(\s*[\]}])", r"\1", cleaned)
 
         try:
@@ -492,7 +492,7 @@ NON-NEGOTIABLE RULES
 4. Optimize for both ATS parsing and recruiter readability.
 5. Treat every word in the job description as potentially important.
 6. Keep rewrite suggestions layout-safe for tightly formatted resumes.
-7. Do NOT claim “100% ATS match” unless the resume genuinely covers the JD’s requirements.
+7. Do NOT claim "100% ATS match" unless the resume genuinely covers the JD's requirements.
 
 FINAL OUTPUT FORMAT
 Return ONLY valid JSON in this structure:
