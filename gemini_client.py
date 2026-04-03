@@ -1,33 +1,86 @@
 import json
 import re
-import requests
 import time
+from typing import Any, Dict, List, Optional
 
+import requests
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+
+
+class ATSUtils:
+    @staticmethod
+    def normalize_token(text: str) -> str:
+        if not isinstance(text, str):
+            return ""
+        text = text.lower().strip()
+        text = re.sub(r"[^a-z0-9\-\+\#/\.& ]+", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    @staticmethod
+    def dedupe_keep_order(items: List[str]) -> List[str]:
+        seen = set()
+        output = []
+        for item in items:
+            if not isinstance(item, str):
+                continue
+            cleaned = item.strip()
+            norm = ATSUtils.normalize_token(cleaned)
+            if cleaned and norm and norm not in seen:
+                seen.add(norm)
+                output.append(cleaned)
+        return output
+
+    @staticmethod
+    def find_keyword_hits(text: str, keywords: List[str]) -> List[str]:
+        text_n = ATSUtils.normalize_token(text)
+        hits = []
+
+        for kw in keywords:
+            if not isinstance(kw, str) or not kw.strip():
+                continue
+
+            kw_clean = kw.strip()
+            kw_n = ATSUtils.normalize_token(kw_clean)
+
+            if not kw_n:
+                continue
+
+            if kw_n in text_n:
+                hits.append(kw_clean)
+                continue
+
+            text_tokens = set(text_n.split())
+            kw_tokens = set(kw_n.split())
+
+            if kw_tokens and text_tokens.intersection(kw_tokens):
+                hits.append(kw_clean)
+
+        return ATSUtils.dedupe_keep_order(hits)
 
 
 class GeminiClient:
     def __init__(self, api_key: str, resume_processor=None):
         self.api_key = api_key
         self.resume_processor = resume_processor
+        self.session = requests.Session()
+        self.session.headers.update({"Content-Type": "application/json"})
 
     def set_resume_processor(self, resume_processor) -> None:
         self.resume_processor = resume_processor
 
-    def _call(self, prompt: str, temperature: float = 0.4) -> str:
-        headers = {"Content-Type": "application/json"}
+    def _call(self, prompt: str, temperature: float = 0.35, max_output_tokens: int = 3200) -> str:
         body = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {
                 "temperature": temperature,
-                "maxOutputTokens": 3000,
+                "maxOutputTokens": max_output_tokens,
                 "responseMimeType": "application/json",
             },
         }
 
-        response = requests.post(
+        response = self.session.post(
             f"{GEMINI_URL}?key={self.api_key}",
-            headers=headers,
             json=body,
             timeout=90,
         )
@@ -73,8 +126,10 @@ class GeminiClient:
             if in_string:
                 continue
 
-            if ch in "{[":
-                stack.append("}" if ch == "{" else "]")
+            if ch == "{":
+                stack.append("}")
+            elif ch == "[":
+                stack.append("]")
             elif ch in "}]":
                 if stack and ch == stack[-1]:
                     stack.pop()
@@ -162,29 +217,20 @@ class GeminiClient:
         return "\n".join(
             f"[{line['index']}] ({line['char_count']} chars) {line['text']}"
             for line in lines
-            if line.get("text", "").strip()
+            if isinstance(line, dict) and line.get("text", "").strip()
         )
 
     def _dedupe_keep_order(self, items: List[str]) -> List[str]:
-        seen = set()
-        output = []
-        for item in items:
-            if not isinstance(item, str):
-                continue
-            norm = item.strip().lower()
-            if norm and norm not in seen:
-                seen.add(norm)
-                output.append(item.strip())
-        return output
+        return ATSUtils.dedupe_keep_order(items)
 
     def _get_keyword_pool_for_ats(self, ats_analysis: Dict[str, Any]) -> List[str]:
         keyword_groups = [
-            ats_analysis.get("recommended_keyword_targets", []),
             ats_analysis.get("high_priority_missing", []),
-            ats_analysis.get("medium_priority_missing", []),
+            ats_analysis.get("recommended_keyword_targets", []),
             ats_analysis.get("missing_keywords", []),
             ats_analysis.get("required_keywords", []),
             ats_analysis.get("preferred_keywords", []),
+            ats_analysis.get("medium_priority_missing", []),
         ]
 
         pool: List[str] = []
@@ -209,9 +255,7 @@ class GeminiClient:
 
         line_tokens = set(line_text_n.split())
         keyword_tokens = set(keyword_n.split())
-
-        overlap = len(line_tokens.intersection(keyword_tokens))
-        return overlap > 0
+        return len(line_tokens.intersection(keyword_tokens)) > 0
 
     def analyze_ats(self, resume_text: str, job_description: str) -> Dict[str, Any]:
         prompt = f"""
@@ -240,30 +284,32 @@ Rules:
 - Analyze the resume against the job description
 - Extract keywords directly from the job description
 - Do not invent requirements not stated in the job description
-- missing_keywords should contain important job-specific terms not clearly present in the resume
-- present_keywords should contain terms clearly found in the resume
-- key_requirements should contain short explicit requirements from the job description
-- required_keywords should include the strongest must-have ATS terms
-- preferred_keywords should include useful but non-essential terms
-- high_priority_missing should include the most valuable truthful missing targets
-- medium_priority_missing should include useful but secondary targets
-- low_priority_missing should include lower-value terms
-- recommended_keyword_targets should be the best keywords to prioritize first
-- Keep arrays concise and relevant
+- present_keywords = terms clearly present in the resume
+- missing_keywords = important job-specific terms not clearly present in the resume
+- key_requirements = short explicit requirements taken from the job description
+- required_keywords = strongest must-have ATS terms
+- preferred_keywords = useful but non-essential terms
+- high_priority_missing = highest-value missing truthful targets
+- medium_priority_missing = useful but secondary missing targets
+- low_priority_missing = lower-value missing targets
+- recommended_keyword_targets = best missing keywords to prioritize first
+- Keep arrays concise, relevant, and de-duplicated
+- ats_score must be an integer from 0 to 100
 
 RESUME:
 {resume_text[:12000]}
 
 JOB DESCRIPTION:
 {job_description[:12000]}
-"""
-        raw = self._call(prompt, temperature=0.2)
+""".strip()
+
+        raw = self._call(prompt, temperature=0.2, max_output_tokens=2200)
         parsed = self._extract_json(raw)
 
         if not isinstance(parsed, dict):
             raise ValueError("ATS analysis must return a JSON object.")
 
-        for key in [
+        list_keys = [
             "present_keywords",
             "missing_keywords",
             "key_requirements",
@@ -273,7 +319,9 @@ JOB DESCRIPTION:
             "medium_priority_missing",
             "low_priority_missing",
             "recommended_keyword_targets",
-        ]:
+        ]
+
+        for key in list_keys:
             value = parsed.get(key, [])
             if not isinstance(value, list):
                 parsed[key] = []
@@ -282,23 +330,28 @@ JOB DESCRIPTION:
                     [item for item in value if isinstance(item, str) and item.strip()]
                 )
 
-        if "ats_score" not in parsed or not isinstance(parsed.get("ats_score"), int):
-            parsed["ats_score"] = 0
+        ats_score = parsed.get("ats_score", 0)
+        if not isinstance(ats_score, int):
+            try:
+                ats_score = int(ats_score)
+            except Exception:
+                ats_score = 0
+        parsed["ats_score"] = max(0, min(100, ats_score))
 
-        if "score_note" not in parsed or not isinstance(parsed.get("score_note"), str):
+        if not isinstance(parsed.get("score_note"), str):
             parsed["score_note"] = ""
 
         return parsed
 
-    def _build_selected_keyword_prompt_block(
+    def _build_keyword_prompt_block(
         self,
-        selected_keywords: List[str],
+        target_keywords: List[str],
         fallback_missing_keywords: List[str],
         key_requirements: List[str],
     ) -> str:
         return f"""
-Selected keywords to target:
-{json.dumps(selected_keywords[:20], ensure_ascii=False)}
+Target missing keywords:
+{json.dumps(target_keywords[:15], ensure_ascii=False)}
 
 Fallback missing keywords:
 {json.dumps(fallback_missing_keywords[:15], ensure_ascii=False)}
@@ -312,14 +365,13 @@ Key requirements:
         lines: List[Dict[str, Any]],
         job_description: str,
         ats_analysis: Dict[str, Any],
-        selected_keywords: List[str],
+        target_keywords: List[str],
     ) -> str:
         missing_keywords = ats_analysis.get("missing_keywords", [])
         key_requirements = ats_analysis.get("key_requirements", [])
         lines_block = self._build_lines_block(lines)
-
-        keyword_block = self._build_selected_keyword_prompt_block(
-            selected_keywords=selected_keywords,
+        keyword_block = self._build_keyword_prompt_block(
+            target_keywords=target_keywords,
             fallback_missing_keywords=missing_keywords,
             key_requirements=key_requirements,
         )
@@ -352,7 +404,7 @@ Hard rules:
 - Return 4 to 8 items max
 - options must contain exactly 3 strings
 - Do not invent fake experience, metrics, tools, dates, roles, achievements, certifications, or technologies
-- Keep each rewrite very close in length to the original
+- Keep each rewrite close in length to the original
 - Preserve the original meaning unless a small wording improvement is needed
 - Keywords must be naturally integrated into the sentence
 - Do NOT keyword stuff
@@ -368,9 +420,9 @@ Hard rules:
 - Do not merge lines
 - Do not split lines
 - Prefer concise output over many items
-- ONLY prioritize the selected keywords when adding ATS language
-- Do not add ATS terms outside the selected keyword list unless already present in the original line
-- If no selected keyword fits a line naturally, do not rewrite that line
+- Prioritize the target missing keywords when adding ATS language
+- If no target keyword fits a line naturally, do not rewrite that line
+- keywords_added must only include keywords actually present in the rewrite
 
 {keyword_block}
 
@@ -389,43 +441,39 @@ Job description:
         selected_keywords: Optional[List[str]] = None,
         max_retries: int = 3,
     ) -> List[Dict[str, Any]]:
-        selected_keywords = selected_keywords or []
-
         if not isinstance(lines, list) or not lines:
             raise ValueError("No resume lines were provided.")
 
-        # If UI didn't pass selected keywords, fall back to recommended ATS targets
-        if not selected_keywords:
-            selected_keywords = self._get_keyword_pool_for_ats(ats_analysis)[:12]
+        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:12]
 
         prompt = self._build_suggestion_prompt(
             lines=lines,
             job_description=job_description,
             ats_analysis=ats_analysis,
-            selected_keywords=selected_keywords,
+            target_keywords=target_keywords,
         )
+
+        line_map = {
+            line["index"]: {
+                "text": line["text"],
+                "char_count": line["char_count"],
+            }
+            for line in lines
+            if isinstance(line, dict)
+            and "index" in line
+            and "text" in line
+            and "char_count" in line
+        }
 
         last_error = None
 
         for attempt in range(max_retries):
             try:
-                raw = self._call(prompt, temperature=0.3)
+                raw = self._call(prompt, temperature=0.3, max_output_tokens=3200)
                 parsed = self._extract_json(raw)
 
                 if not isinstance(parsed, list):
                     raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
-
-                line_map = {
-                    line["index"]: {
-                        "text": line["text"],
-                        "char_count": line["char_count"],
-                    }
-                    for line in lines
-                    if isinstance(line, dict)
-                    and "index" in line
-                    and "text" in line
-                    and "char_count" in line
-                }
 
                 cleaned: List[Dict[str, Any]] = []
 
@@ -462,15 +510,17 @@ Job description:
 
                     for opt in options:
                         opt_clean = opt.strip()
+                        opt_norm = ATSUtils.normalize_token(opt_clean)
 
-                        if opt_clean.lower() in seen:
+                        if not opt_norm or opt_norm in seen:
                             continue
-                        seen.add(opt_clean.lower())
-
-                        if abs(len(opt_clean) - original_len) > max(12, int(max(1, original_len) * 0.35)):
-                            continue
+                        seen.add(opt_norm)
 
                         if opt_clean == actual_original.strip():
+                            continue
+
+                        max_len_delta = max(18, int(max(1, original_len) * 0.45))
+                        if abs(len(opt_clean) - original_len) > max_len_delta:
                             continue
 
                         valid_options.append(opt_clean)
@@ -485,32 +535,23 @@ Job description:
                         keywords_added = []
 
                     keywords_added = [
-                        k.strip()
-                        for k in keywords_added
-                        if isinstance(k, str) and k.strip()
-                    ]
-
-                    # Keep only selected keywords in the reported keyword list
-                    selected_norm = {ATSUtils.normalize_token(k) for k in selected_keywords}
-                    keywords_added = [
-                        kw for kw in keywords_added
-                        if ATSUtils.normalize_token(kw) in selected_norm
+                        kw.strip()
+                        for kw in keywords_added
+                        if isinstance(kw, str) and kw.strip()
                     ]
                     keywords_added = self._dedupe_keep_order(keywords_added)
 
-                    # If selected keywords exist, at least one option should plausibly use one
-                    if selected_keywords:
-                        option_keyword_hits = []
-                        for opt in valid_options:
-                            hits = ATSUtils.find_keyword_hits(opt, selected_keywords)
-                            option_keyword_hits.extend(hits)
+                    option_keyword_hits = []
+                    for opt in valid_options:
+                        option_keyword_hits.extend(ATSUtils.find_keyword_hits(opt, target_keywords))
 
-                        option_keyword_hits = self._dedupe_keep_order(option_keyword_hits)
-                        if not option_keyword_hits and not keywords_added:
-                            continue
+                    option_keyword_hits = self._dedupe_keep_order(option_keyword_hits)
 
-                        if not keywords_added:
-                            keywords_added = option_keyword_hits
+                    if target_keywords and not option_keyword_hits and not keywords_added:
+                        continue
+
+                    if not keywords_added:
+                        keywords_added = option_keyword_hits
 
                     cleaned.append(
                         {
@@ -523,6 +564,7 @@ Job description:
                     )
 
                 if cleaned:
+                    cleaned = sorted(cleaned, key=lambda x: x["line_index"])
                     return cleaned
 
                 raise ValueError("Model returned JSON, but no valid suggestions survived validation.")
