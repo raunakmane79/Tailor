@@ -205,6 +205,12 @@ class JDAnalysis:
     implied_screening_signals: List[str] = field(default_factory=list)
     metrics_kpi_language: List[str] = field(default_factory=list)
     ats_critical_terms: List[str] = field(default_factory=list)
+    required_keywords: List[str] = field(default_factory=list)
+    preferred_keywords: List[str] = field(default_factory=list)
+    high_priority_missing: List[str] = field(default_factory=list)
+    medium_priority_missing: List[str] = field(default_factory=list)
+    low_priority_missing: List[str] = field(default_factory=list)
+    recommended_keyword_targets: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -259,6 +265,13 @@ class ATSUtils:
         "multi-column layouts can cause reading-order issues",
     ]
 
+    ACTION_VERBS = {
+        "analyzed", "led", "built", "developed", "designed", "created", "implemented",
+        "improved", "optimized", "managed", "reduced", "increased", "streamlined",
+        "coordinated", "supported", "executed", "delivered", "drove", "evaluated",
+        "monitored", "produced", "launched", "automated", "engineered", "performed"
+    }
+
     @staticmethod
     def clean_text(text: str) -> str:
         if not text:
@@ -272,6 +285,26 @@ class ATSUtils:
         token = ATSUtils.clean_text(token).lower()
         token = re.sub(r"[^a-z0-9+/&().# -]", "", token)
         return token.strip()
+
+    @staticmethod
+    def normalize_text(text: str) -> str:
+        if not isinstance(text, str):
+            return ""
+        text = text.strip()
+        text = text.replace("“", '"').replace("”", '"').replace("’", "'")
+        text = re.sub(r"\s+", " ", text)
+        return text
+
+    @staticmethod
+    def first_word(text: str) -> str:
+        normalized = ATSUtils.normalize_text(text)
+        parts = normalized.split()
+        return parts[0].lower() if parts else ""
+
+    @staticmethod
+    def should_preserve_first_word(text: str) -> bool:
+        first = ATSUtils.first_word(text)
+        return first in ATSUtils.ACTION_VERBS
 
     @staticmethod
     def dedupe_keep_order(items: List[str]) -> List[str]:
@@ -316,8 +349,7 @@ class ATSUtils:
 
 class ATSScorer:
     """
-    Lightweight heuristic scorer. This does NOT replace an LLM's reasoning,
-    but it gives deterministic scoring on top of model outputs.
+    Lightweight heuristic scorer. Strict on truth and layout safety.
     """
 
     WEIGHTS = {
@@ -390,8 +422,8 @@ class ATSScorer:
         selected_keyword_score = min(25, len(selected_hits) * 5)
 
         truthfulness_score = ATSScorer.WEIGHTS["truthfulness"]
-        if len(text) > max(40, int(len(original_text) * 2.2)):
-            truthfulness_score -= 4
+        if len(text) > len(original_text):
+            truthfulness_score -= 2
         if text.count(";") > 1:
             truthfulness_score -= 2
 
@@ -424,7 +456,7 @@ class ATSScorer:
 
         length_score = ATSScorer.WEIGHTS["length_control"]
         if max_chars is not None and len(text) > max_chars:
-            length_score = max(0, length_score - 5)
+            length_score = 0
 
         total = (
             keyword_score
@@ -451,7 +483,7 @@ You are an elite resume-job description matching engine built to maximize ATS al
 Your job is to analyze the full job description with extreme care, identify every assessable hiring signal, compare it against the candidate's resume line by line, and generate optimized resume suggestions that maximize ATS match quality.
 
 PRIMARY GOAL
-Produce the strongest possible ATS-aligned suggestions while preserving truth, clarity, formatting intent, and natural human resume language.
+Produce the strongest possible ATS-aligned suggestions while preserving truth, clarity, formatting intent, natural human resume language, and exact line-length safety.
 
 NON-NEGOTIABLE RULES
 1. Never invent experience, tools, certifications, metrics, industries, leadership, scope, or outcomes not supported by the resume.
@@ -459,29 +491,8 @@ NON-NEGOTIABLE RULES
 3. Keep suggestions natural, concise, recruiter-friendly, and resume-appropriate.
 4. Optimize for both ATS parsing and recruiter readability.
 5. Treat every word in the job description as potentially important.
-6. Scan the ENTIRE job description carefully, including:
-   - title
-   - summary
-   - responsibilities
-   - required qualifications
-   - preferred qualifications
-   - must-have skills
-   - nice-to-have skills
-   - tools/platforms/systems
-   - certifications
-   - education requirements
-   - industry/domain language
-   - measurable expectations
-   - hidden screening signals
-   - repeated phrases
-   - wording in the company description if relevant
-7. Prioritize exact-match terminology when truthful and natural.
-8. Preserve the candidate's original meaning unless a stronger truthful phrasing exists.
-9. Keep bullet length close to original unless a stronger result requires a slight increase.
-10. Avoid generic buzzwords unless they are explicitly valuable for ATS matching.
-
-IMPORTANT
-Do NOT claim “100% ATS match” unless the resume genuinely covers the JD’s requirements.
+6. Keep rewrite suggestions layout-safe for tightly formatted resumes.
+7. Do NOT claim “100% ATS match” unless the resume genuinely covers the JD’s requirements.
 
 FINAL OUTPUT FORMAT
 Return ONLY valid JSON in this structure:
@@ -501,7 +512,13 @@ Return ONLY valid JSON in this structure:
     "synonyms_and_variants": {{}},
     "implied_screening_signals": [],
     "metrics_kpi_language": [],
-    "ats_critical_terms": []
+    "ats_critical_terms": [],
+    "required_keywords": [],
+    "preferred_keywords": [],
+    "high_priority_missing": [],
+    "medium_priority_missing": [],
+    "low_priority_missing": [],
+    "recommended_keyword_targets": []
   }},
   "line_suggestions": [],
   "global_resume_feedback": {{
@@ -564,13 +581,15 @@ Job description:
         surrounding_before: Optional[List[str]] = None,
         surrounding_after: Optional[List[str]] = None,
         max_chars: Optional[int] = None,
-        n_options: int = 3,
+        n_options: int = 5,
     ) -> str:
         surrounding_before = surrounding_before or []
         surrounding_after = surrounding_after or []
         selected_keywords = selected_keywords or []
 
-        char_rule = f"Keep length <= {max_chars} chars." if max_chars else "Keep length close to original."
+        first_word = ATSUtils.first_word(original_line)
+        preserve_first_word = ATSUtils.should_preserve_first_word(original_line)
+
         options_schema = ",\n".join([
             """    {
       "text": "",
@@ -588,10 +607,16 @@ CRITICAL RULES
 2. Do not add any keyword unless it fits truthfully.
 3. Do not invent tools, certifications, metrics, industries, scope, or outcomes.
 4. Prefer exact selected keyword phrases where natural.
-5. If none of the selected keywords fit, return conservative rewrites and explain that.
+5. If none of the selected keywords fit, still return the best truthful rewrite.
 6. Avoid keyword stuffing and AI-sounding phrasing.
-7. Preserve original meaning and resume tone.
-8. {char_rule}
+7. Preserve the original meaning and resume tone.
+8. You may rewrite the FULL line if needed.
+9. Do NOT exceed {max_chars if max_chars is not None else "the original"} characters.
+10. Stay as close as possible to the original line length.
+11. The output must remain layout-safe for a tightly formatted resume.
+12. {"Preserve the FIRST WORD exactly: " + first_word if preserve_first_word else "Keep the opening style natural and consistent with the original."}
+13. Prefer replacing weaker words with stronger ATS language instead of adding extra words.
+14. Return 1 to 5 options. More good options are preferred, but do not force weak ones.
 
 Return ONLY valid JSON:
 {{
@@ -627,7 +652,11 @@ Job description:
         max_chars: Optional[int] = None,
     ) -> str:
         options_block = "\n".join([f"{i + 1}. {opt}" for i, opt in enumerate(options)])
-        char_rule = f"Stay within {max_chars} characters if possible." if max_chars else "Keep the length close to the original."
+        char_rule = (
+            f"Do not exceed {max_chars} characters."
+            if max_chars is not None
+            else "Keep the length close to the original."
+        )
 
         return f"""
 Choose the best rewritten resume line.
@@ -636,10 +665,7 @@ Return ONLY valid JSON:
 {{
   "best_option_number": 1,
   "reason": "",
-  "rejected_option_notes": {{
-    "2": "",
-    "3": ""
-  }}
+  "rejected_option_notes": {{}}
 }}
 
 Original:
@@ -686,6 +712,12 @@ class ATSReviewEngine:
             implied_screening_signals=ATSUtils.dedupe_keep_order(data.get("implied_screening_signals", [])),
             metrics_kpi_language=ATSUtils.dedupe_keep_order(data.get("metrics_kpi_language", [])),
             ats_critical_terms=ATSUtils.dedupe_keep_order(data.get("ats_critical_terms", [])),
+            required_keywords=ATSUtils.dedupe_keep_order(data.get("required_keywords", [])),
+            preferred_keywords=ATSUtils.dedupe_keep_order(data.get("preferred_keywords", [])),
+            high_priority_missing=ATSUtils.dedupe_keep_order(data.get("high_priority_missing", [])),
+            medium_priority_missing=ATSUtils.dedupe_keep_order(data.get("medium_priority_missing", [])),
+            low_priority_missing=ATSUtils.dedupe_keep_order(data.get("low_priority_missing", [])),
+            recommended_keyword_targets=ATSUtils.dedupe_keep_order(data.get("recommended_keyword_targets", [])),
         )
 
     def get_relevant_lines(self, jd: JDAnalysis, include_low: bool = False) -> List[LineSuggestion]:
@@ -714,14 +746,19 @@ class ATSReviewEngine:
             raise IndexError(f"Invalid line_index: {line_index}")
 
         context = self.processor.get_context_window(line_index, window=1)
+        max_chars = line.char_count
+
+        chosen_keywords = selected_keywords or jd.recommended_keyword_targets or jd.high_priority_missing or []
+
         return ResumeRewritePrompts.build_line_rewrite_prompt(
             line_index=line_index,
             original_line=line.text,
             job_description=job_description,
-            selected_keywords=selected_keywords or [],
+            selected_keywords=chosen_keywords[:12],
             surrounding_before=context.get("before", []),
             surrounding_after=context.get("after", []),
-            max_chars=max(line.char_count + 20, int(line.char_count * 1.3)),
+            max_chars=max_chars,
+            n_options=5,
         )
 
     def parse_line_options(
@@ -735,10 +772,55 @@ class ATSReviewEngine:
         data = ATSUtils.safe_parse_json(raw_model_output)
         options: List[RewriteOption] = []
 
-        for option in data.get("options", []):
+        raw_options = data.get("options", [])
+        if not isinstance(raw_options, list):
+            raw_options = []
+
+        original_normalized = ATSUtils.normalize_text(original_line)
+        original_first = ATSUtils.first_word(original_line)
+        preserve_first = ATSUtils.should_preserve_first_word(original_line)
+        min_chars = max(1, len(original_line) - 8)
+
+        seen = set()
+
+        for option in raw_options:
+            if not isinstance(option, dict):
+                continue
+
             text = ATSUtils.clean_text(option.get("text", ""))
             if not text:
                 continue
+
+            text_norm = ATSUtils.normalize_text(text)
+            if not text_norm:
+                continue
+
+            if text_norm.lower() == original_normalized.lower():
+                continue
+
+            if text_norm.lower() in seen:
+                continue
+            seen.add(text_norm.lower())
+
+            if max_chars is not None and len(text) > max_chars:
+                continue
+
+            if len(text) < min_chars:
+                continue
+
+            if preserve_first:
+                option_first = ATSUtils.first_word(text)
+                if option_first != original_first:
+                    continue
+
+            keyword_hits = ATSUtils.find_keyword_hits(text, selected_keywords or [])
+            keywords_added = ATSUtils.dedupe_keep_order(option.get("keywords_added", []))
+            keywords_added = [kw for kw in keywords_added if ATSUtils.normalize_token(kw) in {
+                ATSUtils.normalize_token(k) for k in (selected_keywords or [])
+            }]
+
+            if not keywords_added:
+                keywords_added = keyword_hits
 
             score = ATSScorer.score_rewrite_option(
                 original=original_line,
@@ -751,11 +833,13 @@ class ATSReviewEngine:
             options.append(
                 RewriteOption(
                     text=text,
-                    keywords_added=ATSUtils.dedupe_keep_order(option.get("keywords_added", [])),
+                    keywords_added=ATSUtils.dedupe_keep_order(keywords_added),
                     score=score,
                     why_it_works=option.get("why_it_works", ""),
                 )
             )
+
+        options = sorted(options, key=lambda x: x.score, reverse=True)[:5]
 
         return {
             "line_index": data.get("line_index"),
@@ -781,7 +865,7 @@ class ATSReviewEngine:
 
         return {
             "best_option_number": best_num,
-            "reason": f"Best blend of ATS alignment, truthfulness, and readability with score {best_obj.score}.",
+            "reason": f"Best blend of ATS alignment, truthfulness, readability, and strict length safety with score {best_obj.score}.",
             "rejected_option_notes": rejected,
         }
 
@@ -796,10 +880,10 @@ class ATSReviewEngine:
         overall = int(sum(scores) / len(scores)) if scores else 0
 
         rewrite_based_improvements = [
-            "Align summary section with the exact job family and function.",
+            "Align the summary section with the exact job family and function.",
             "Mirror required tools and process language in the skills section where truthful.",
-            "Strengthen bullets using action + method + result structure.",
-            "Add exact JD terminology where naturally supported by the experience.",
+            "Strengthen bullets using action + method + result structure within the same line length.",
+            "Add exact JD terminology only where naturally supported by the experience and layout permits.",
         ]
 
         substantive_gaps = []
@@ -819,6 +903,7 @@ class ATSReviewEngine:
             blockers.append("missing required qualifications cannot be solved by rewriting alone")
         if jd.required_tools:
             blockers.append("missing required tools or systems cannot be claimed without real experience")
+        blockers.append("strict line-length preservation limits how many keywords can be added")
         blockers.append("ATS match varies by employer system and weighting logic")
 
         return GlobalResumeFeedback(
@@ -855,14 +940,16 @@ for suggestion in relevant_lines:
     prompt = engine.build_line_prompt(
         suggestion.line_index,
         job_description,
-        jd
+        jd,
+        selected_keywords=jd.recommended_keyword_targets[:12]
     )
 
     parsed = engine.parse_line_options(
         raw_model_output=line_model_output,
         jd=jd,
         original_line=suggestion.original,
-        max_chars=max(len(suggestion.original) + 20, int(len(suggestion.original) * 1.3)),
+        max_chars=len(suggestion.original),
+        selected_keywords=jd.recommended_keyword_targets[:12],
     )
 
     suggestion.options = parsed["options"]
