@@ -6,6 +6,27 @@ from pathlib import Path
 
 import streamlit as st
 
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # remove password from memory
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.text_input("Enter Password", type="password", key="password", on_change=password_entered)
+        return False
+    elif not st.session_state["password_correct"]:
+        st.text_input("Enter Password", type="password", key="password", on_change=password_entered)
+        st.error("Incorrect password")
+        return False
+    else:
+        return True
+
+# 🔒 Stop app if password not correct
+if not check_password():
+    st.stop()
 from resume_processor import ResumeProcessor
 from gemini_client import GeminiClient
 
