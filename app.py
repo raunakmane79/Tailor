@@ -69,7 +69,6 @@ st.markdown(
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
 
-  /* ─── PASSWORD SCREEN ─────────────────────────── */
   .pw-wrap {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 92vh; text-align: center; gap: 0;
@@ -94,7 +93,6 @@ st.markdown(
     line-height: 1.65; max-width: 340px;
   }
 
-  /* ─── TOP BAR ─────────────────────────────────── */
   .topbar {
     display: flex; justify-content: space-between; align-items: center;
     gap: 1rem; padding: 0.85rem 1.2rem;
@@ -126,7 +124,6 @@ st.markdown(
     letter-spacing: 0.01em;
   }
 
-  /* ─── HERO ─────────────────────────────────────── */
   .hero {
     border-radius: var(--r-xl); padding: 2.2rem 2.2rem 2rem;
     background: linear-gradient(145deg, rgba(255,255,255,0.048), rgba(255,255,255,0.018));
@@ -180,7 +177,6 @@ st.markdown(
   .mini-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--muted); margin-bottom: 0.2rem; }
   .mini-val { font-size: 0.96rem; color: #fff; font-weight: 700; }
 
-  /* ─── SECTION CARDS ─────────────────────────────── */
   .sec-card {
     border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
     background: linear-gradient(160deg, rgba(255,255,255,0.046), rgba(255,255,255,0.018));
@@ -198,7 +194,6 @@ st.markdown(
   .sec-title { font-family: var(--font-head); font-size: 1.3rem; font-weight: 700; color: #fff; letter-spacing: -0.03em; margin-bottom: 0.2rem; }
   .sec-sub { font-size: 0.94rem; color: #9aacbf; line-height: 1.72; }
 
-  /* ─── INPUTS ─────────────────────────────────────── */
   div[data-testid="stFileUploader"] {
     border: 1.5px dashed rgba(255,255,255,0.14) !important;
     border-radius: var(--r-lg) !important;
@@ -227,7 +222,6 @@ st.markdown(
     color: #dde5f0 !important; font-weight: 600 !important; font-size: 0.95rem !important;
   }
 
-  /* ─── BUTTONS ─────────────────────────────────────── */
   .stButton > button, .stDownloadButton > button {
     width: 100% !important; border-radius: var(--r-md) !important; min-height: 3rem !important;
     font-family: var(--font-body) !important; font-weight: 700 !important; font-size: 0.96rem !important;
@@ -242,7 +236,6 @@ st.markdown(
     filter: brightness(1.05) !important;
   }
 
-  /* ─── PROGRESS ─────────────────────────────────────── */
   div[data-testid="stProgressBar"] > div {
     background: rgba(255,255,255,0.07) !important;
     border-radius: 999px !important; height: 10px !important;
@@ -252,7 +245,6 @@ st.markdown(
     border-radius: 999px !important; transition: width 0.4s ease !important;
   }
 
-  /* ─── METRICS ─────────────────────────────────────── */
   .metric-shell {
     border-radius: var(--r-lg); padding: 1.1rem 1.15rem;
     background: rgba(255,255,255,0.04); border: 1px solid var(--border);
@@ -270,7 +262,6 @@ st.markdown(
     font-size: 2.1rem !important; font-weight: 800 !important; letter-spacing: -0.04em !important;
   }
 
-  /* ─── KEYWORDS ─────────────────────────────────────── */
   .kw-box {
     border-radius: var(--r-lg); padding: 1.05rem 1.1rem;
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -289,14 +280,12 @@ st.markdown(
     border-radius: 999px; font-size: 0.82rem; font-weight: 600;
   }
 
-  /* ─── REQ ITEMS ───────────────────────────────────── */
   .req-item {
     padding: 0.85rem 1rem; border-radius: var(--r-sm);
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
     color: #cdd8e7; font-size: 0.94rem; line-height: 1.68; margin-bottom: 0.6rem;
   }
 
-  /* ─── SUGGESTION CARDS ────────────────────────────── */
   .sug-card {
     border-radius: var(--r-lg); padding: 1.1rem 1.15rem; margin-bottom: 0.9rem;
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -310,7 +299,6 @@ st.markdown(
     color: #c8daff; margin: 0.75rem 0; font-size: 0.93rem; line-height: 1.65;
   }
 
-  /* ─── RADIO ───────────────────────────────────────── */
   div[role="radiogroup"] > label {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid var(--border) !important;
@@ -331,7 +319,6 @@ st.markdown(
     font-size: 0.96rem !important; line-height: 1.6 !important;
   }
 
-  /* ─── CODE BLOCKS ─────────────────────────────────── */
   div[data-testid="stCodeBlock"] {
     border-radius: 14px !important; overflow: hidden !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
@@ -342,7 +329,6 @@ st.markdown(
     font-size: 0.88rem !important; line-height: 1.65 !important;
   }
 
-  /* ─── LOADING BAR ─────────────────────────────────── */
   .load-wrap { margin: 0.5rem 0 1.2rem; }
   .load-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
   .load-label { font-size: 0.86rem; font-weight: 600; color: var(--muted); }
@@ -358,7 +344,6 @@ st.markdown(
     box-shadow: 0 0 12px rgba(79,139,255,0.5);
   }
 
-  /* ─── DOWNLOAD CARD ───────────────────────────────── */
   .dl-card {
     border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
     background: linear-gradient(145deg, rgba(79,139,255,0.08), rgba(79,139,255,0.025));
@@ -368,7 +353,6 @@ st.markdown(
   .dl-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
   .dl-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.1rem; }
 
-  /* ─── SUCCESS / ALERTS ────────────────────────────── */
   .success-bar {
     padding: 0.88rem 1rem; border-radius: 14px;
     background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
@@ -385,7 +369,6 @@ st.markdown(
 
   @media (max-width: 1000px) {
     .hero-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: 2.6rem; }
     .topbar { flex-direction: column; align-items: flex-start; }
   }
 </style>
@@ -456,6 +439,7 @@ def reset_state_for_new_file():
         "pdf_bytes",
         "tailored_docx_bytes",
         "line_edits",
+        "ready_for_manual_edit",
     ]:
         if k == "suggestions":
             st.session_state[k] = []
@@ -463,6 +447,8 @@ def reset_state_for_new_file():
             st.session_state[k] = {}
         elif k == "line_edits":
             st.session_state[k] = {}
+        elif k == "ready_for_manual_edit":
+            st.session_state[k] = False
         else:
             st.session_state[k] = None
 
@@ -478,11 +464,13 @@ def full_reset():
         "uploaded_filename",
         "uploaded_file_signature",
         "line_edits",
+        "ready_for_manual_edit",
     ]:
         st.session_state[k] = None
     st.session_state["suggestions"] = []
     st.session_state["choices_made"] = {}
     st.session_state["line_edits"] = {}
+    st.session_state["ready_for_manual_edit"] = False
 
 
 def show_empty_state(msg):
@@ -555,6 +543,7 @@ defaults = {
     "_loading_pct": 0,
     "line_edits": {},
     "line_char_limit": 90,
+    "ready_for_manual_edit": False,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -613,12 +602,12 @@ st.markdown(
     <div>
       <div class="eyebrow">✦ Smarter Resume Tailoring</div>
       <div class="hero-title"><span class="grad">Rizzume</span><br>Rizz up your recruiter</div>
-      <div class="hero-body">Upload your resume, paste the job description, and tailor each line without breaking the format. Spot keyword gaps, get sharper rewrites, edit inline, and export a clean final version.</div>
+      <div class="hero-body">Upload your resume, paste the job description, and tailor each line without breaking the format. Spot keyword gaps, get sharper rewrites, edit after selection, and export a clean final version.</div>
       <div class="pill-row">
         <div class="pill">ATS Analysis</div>
         <div class="pill">Keyword Match</div>
         <div class="pill">Line Rewrites</div>
-        <div class="pill">Inline Editor</div>
+        <div class="pill">Keyword Reference</div>
         <div class="pill">Export Ready</div>
       </div>
     </div>
@@ -626,7 +615,7 @@ st.markdown(
       <div>
         <div class="stat-label">What it does</div>
         <div class="stat-big">Tailor faster</div>
-        <div class="stat-copy">Compare your resume against the role, find what's missing, improve only the lines that matter — without destroying layout.</div>
+        <div class="stat-copy">Review ATS gaps, accept the best rewrites, then manually fine-tune the updated resume with keyword guidance on the side.</div>
       </div>
       <div class="mini-grid">
         <div class="mini-box"><div class="mini-label">Focus</div><div class="mini-val">ATS + Clarity</div></div>
@@ -649,10 +638,10 @@ if st.session_state.ats_analysis:
     steps = 2
 if st.session_state.suggestions:
     steps = 3
-if st.session_state.tailored_docx_bytes is not None:
+if st.session_state.ready_for_manual_edit:
     steps = 4
 
-labels = ["Upload", "ATS Analysis", "Suggestions", "Done"]
+labels = ["Upload", "ATS Analysis", "Suggestions", "Edit & Export"]
 render_loading_bar(f"Workflow — {labels[min(steps, 3)]}", int(steps / 4 * 100))
 
 # ---------------------------------------------------
@@ -694,7 +683,7 @@ if uploaded_file is not None:
             unsafe_allow_html=True,
         )
 
-u1, u2, u3 = st.columns([1, 1, 4], gap="large")
+u1, u2, _ = st.columns([1, 1, 4], gap="large")
 
 with u1:
     if st.button("Analyze ATS Match", use_container_width=True):
@@ -715,6 +704,7 @@ with u1:
                     st.session_state.choices_made = {}
                     st.session_state.tailored_docx_bytes = None
                     st.session_state.pdf_bytes = None
+                    st.session_state.ready_for_manual_edit = False
                     render_loading_bar("ATS analysis complete", 50)
                     st.success("ATS analysis complete.")
                 except Exception as e:
@@ -801,12 +791,7 @@ if st.session_state.ats_analysis:
             help="A quick way to set your target characters per visual line.",
         )
 
-    preset_map = {
-        "Compact": 80,
-        "Balanced": 90,
-        "Relaxed": 100,
-    }
-
+    preset_map = {"Compact": 80, "Balanced": 90, "Relaxed": 100}
     default_slider_value = st.session_state.get("line_char_limit", preset_map[char_preset])
 
     with slider_col:
@@ -842,10 +827,8 @@ if st.session_state.ats_analysis:
                     )
 
                     candidate_lines = [
-                        line
-                        for line in lines
-                        if line.get("text", "").strip()
-                        and len(line.get("text", "").strip()) >= 20
+                        line for line in lines
+                        if line.get("text", "").strip() and len(line.get("text", "").strip()) >= 20
                     ]
 
                     sugs = client.generate_suggestions(
@@ -859,6 +842,7 @@ if st.session_state.ats_analysis:
                     st.session_state.choices_made = {}
                     st.session_state.tailored_docx_bytes = None
                     st.session_state.pdf_bytes = None
+                    st.session_state.ready_for_manual_edit = False
                     render_loading_bar("Suggestions ready", 75)
 
                     if sugs:
@@ -880,7 +864,7 @@ if st.session_state.suggestions:
 <div class="sec-card">
   <div class="step-tag">Step 03</div>
   <div class="sec-title">Generated Suggestions</div>
-  <div class="sec-sub">Suggestions were generated using ATS gaps, missing keywords, and your formatting budget. Review and keep only the changes you want.</div>
+  <div class="sec-sub">Pick the rewrites you want first. After applying them, the manual editor will open with those changes already included.</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -929,7 +913,7 @@ if st.session_state.suggestions:
 
     ap1, _ = st.columns([1, 4], gap="large")
     with ap1:
-        if st.button("Apply Selected Changes", use_container_width=True):
+        if st.button("Apply Selected Changes & Open Editor", use_container_width=True):
             if st.session_state.resume_processor is None:
                 st.error("Resume processor not found. Re-upload your resume.")
             else:
@@ -947,118 +931,152 @@ if st.session_state.suggestions:
                     st.session_state.tailored_docx_bytes = fresh_proc.export()
                     st.session_state.pdf_bytes = None
                     st.session_state.line_edits = {}
-                    render_loading_bar("Changes applied — ready to edit & export", 90)
-                    st.success("Changes applied. Review and fine-tune in the editor below.")
+
+                    for line in st.session_state.resume_processor.get_all_lines():
+                        if line["text"].strip():
+                            st.session_state.line_edits[line["index"]] = line["text"]
+
+                    st.session_state.ready_for_manual_edit = True
+                    render_loading_bar("Suggestions applied — editor ready", 90)
+                    st.success("Selected suggestions applied. You can now manually edit the updated resume below.")
                 except Exception as e:
                     st.error(f"Failed to apply changes: {e}")
 
 # ---------------------------------------------------
 # STEP 4 — INLINE EDITOR + EXPORT
 # ---------------------------------------------------
-if st.session_state.resume_processor is not None:
+if st.session_state.resume_processor is not None and st.session_state.ready_for_manual_edit:
     lines = st.session_state.resume_processor.get_all_lines()
     name_part = extract_name_from_resume(lines)
     job_part = extract_job_title(job_description if job_description else "")
     file_stem = f"{name_part}_{job_part}_Resume"
+    ats = st.session_state.ats_analysis or {}
 
     st.markdown(
         """
 <div class="sec-card">
   <div class="step-tag">Step 04</div>
-  <div class="sec-title">Review, Edit & Export</div>
+  <div class="sec-title">Manual Edit & Export</div>
   <div class="sec-sub">
-    Review and tweak individual lines below. Your <strong style="color:#c5daff">original DOCX formatting</strong>
-    (fonts, spacing, layout) is always preserved in the download — this editor lets you correct
-    any line text before exporting.
+    Your selected suggestions have already been applied. Make final manual edits, refer to ATS keywords on the side, and then download your DOCX.
   </div>
 </div>
 """,
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        """
+    edit_col, keyword_col = st.columns([2.2, 1], gap="large")
+
+    with edit_col:
+        st.markdown(
+            """
 <div style="background:rgba(79,139,255,0.06);border:1px solid rgba(79,139,255,0.16);
             border-radius:16px;padding:1rem 1.2rem;margin-bottom:1rem;">
   <span style="font-size:0.85rem;color:#a8c4ff;font-weight:600;">
-    ✏️ Edit any line below, then click <strong>Apply Line Edits → Rebuild DOCX</strong> to bake your changes in.
-    The download will always reflect the latest rebuild. Original formatting is preserved.
+    ✏️ Edit the already-updated resume below, then click <strong>Apply Manual Edits → Rebuild DOCX</strong>.
   </span>
 </div>
 """,
-        unsafe_allow_html=True,
-    )
+            unsafe_allow_html=True,
+        )
 
-    all_lines = st.session_state.resume_processor.get_all_lines()
-    editable_lines = [l for l in all_lines if l["text"].strip()]
+        all_lines = st.session_state.resume_processor.get_all_lines()
+        editable_lines = [l for l in all_lines if l["text"].strip()]
 
-    if "line_edits" not in st.session_state:
-        st.session_state.line_edits = {}
+        st.markdown(
+            '<div style="border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:1rem;">',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div style="background:#1a2236;padding:0.65rem 1.1rem;border-bottom:1px solid rgba(255,255,255,0.07);">'
+            '<span style="font-size:0.75rem;font-weight:700;color:#7a90b0;text-transform:uppercase;letter-spacing:0.09em;">'
+            'Line Editor — updated resume</span></div>',
+            unsafe_allow_html=True,
+        )
 
-    for l in editable_lines:
-        idx = l["index"]
-        if idx not in st.session_state.line_edits:
-            st.session_state.line_edits[idx] = l["text"]
+        for l in editable_lines:
+            idx = l["index"]
+            col_idx, col_edit = st.columns([0.08, 0.92], gap="small")
+            with col_idx:
+                st.markdown(
+                    f'<div style="padding:0.55rem 0;text-align:center;font-size:0.72rem;'
+                    f'font-weight:700;color:#4a5a72;font-family:var(--font-mono);">{idx}</div>',
+                    unsafe_allow_html=True,
+                )
+            with col_edit:
+                new_val = st.text_input(
+                    label=f"line_{idx}",
+                    value=st.session_state.line_edits.get(idx, l["text"]),
+                    key=f"le_{idx}",
+                    label_visibility="collapsed",
+                )
+                st.session_state.line_edits[idx] = new_val
 
-    st.markdown(
-        '<div style="border:1px solid rgba(255,255,255,0.08);border-radius:20px;overflow:hidden;margin-bottom:1rem;">',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div style="background:#1a2236;padding:0.65rem 1.1rem;border-bottom:1px solid rgba(255,255,255,0.07);">'
-        '<span style="font-size:0.75rem;font-weight:700;color:#7a90b0;text-transform:uppercase;letter-spacing:0.09em;">'
-        'Line Editor — every line from your resume</span></div>',
-        unsafe_allow_html=True,
-    )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    for l in editable_lines:
-        idx = l["index"]
-        col_idx, col_edit = st.columns([0.08, 0.92], gap="small")
-        with col_idx:
-            st.markdown(
-                f'<div style="padding:0.55rem 0;text-align:center;font-size:0.72rem;'
-                f'font-weight:700;color:#4a5a72;font-family:var(--font-mono);">{idx}</div>',
-                unsafe_allow_html=True,
-            )
-        with col_edit:
-            new_val = st.text_input(
-                label=f"line_{idx}",
-                value=st.session_state.line_edits.get(idx, l["text"]),
-                key=f"le_{idx}",
-                label_visibility="collapsed",
-            )
-            st.session_state.line_edits[idx] = new_val
+        apply_col, _ = st.columns([1, 3], gap="large")
+        with apply_col:
+            if st.button("✅ Apply Manual Edits → Rebuild DOCX", use_container_width=True):
+                try:
+                    if uploaded_file is not None:
+                        fresh_proc = ResumeProcessor(uploaded_file.getvalue())
+                    else:
+                        fresh_proc = ResumeProcessor(st.session_state.resume_processor.export())
 
-    st.markdown('</div>', unsafe_allow_html=True)
+                    for i, sug in enumerate(st.session_state.suggestions):
+                        chosen_text = st.session_state.choices_made.get(i)
+                        if chosen_text:
+                            fresh_proc.replace_line(sug["line_index"], chosen_text)
 
-    apply_col, _ = st.columns([1, 3], gap="large")
-    with apply_col:
-        if st.button("✅ Apply Line Edits → Rebuild DOCX", use_container_width=True):
-            try:
-                if uploaded_file is not None:
-                    fresh_proc = ResumeProcessor(uploaded_file.getvalue())
-                else:
-                    fresh_proc = ResumeProcessor(st.session_state.resume_processor.export())
+                    original_current_lines = st.session_state.resume_processor.get_all_lines()
 
-                for i, sug in enumerate(st.session_state.suggestions):
-                    chosen_text = st.session_state.choices_made.get(i)
-                    if chosen_text:
-                        fresh_proc.replace_line(sug["line_index"], chosen_text)
+                    for idx, new_text in st.session_state.line_edits.items():
+                        original_text = next(
+                            (l["text"] for l in original_current_lines if l["index"] == idx), None
+                        )
+                        if original_text is not None and new_text != original_text:
+                            fresh_proc.replace_line(idx, new_text)
 
-                for idx, new_text in st.session_state.line_edits.items():
-                    original_text = next(
-                        (l["text"] for l in all_lines if l["index"] == idx), None
-                    )
-                    if original_text is not None and new_text != original_text:
-                        fresh_proc.replace_line(idx, new_text)
+                    st.session_state.resume_processor = fresh_proc
+                    st.session_state.tailored_docx_bytes = fresh_proc.export()
+                    st.session_state.pdf_bytes = None
 
-                st.session_state.resume_processor = fresh_proc
-                st.session_state.tailored_docx_bytes = fresh_proc.export()
-                st.session_state.pdf_bytes = None
-                render_loading_bar("DOCX rebuilt with your edits — ready to export", 95)
-                st.success("DOCX rebuilt. Download buttons below are now up to date.")
-            except Exception as e:
-                st.error(f"Failed to rebuild DOCX: {e}")
+                    for line in st.session_state.resume_processor.get_all_lines():
+                        if line["text"].strip():
+                            st.session_state.line_edits[line["index"]] = line["text"]
+
+                    render_loading_bar("DOCX rebuilt with manual edits — ready to export", 95)
+                    st.success("DOCX rebuilt. Download buttons below are now up to date.")
+                except Exception as e:
+                    st.error(f"Failed to rebuild DOCX: {e}")
+
+    with keyword_col:
+        present = ats.get("present_keywords", [])
+        missing = ats.get("missing_keywords", [])
+        recommended = (
+            ats.get("high_priority_missing", [])
+            or ats.get("recommended_keyword_targets", [])
+            or []
+        )
+
+        st.markdown(
+            """
+<div class="sec-card" style="padding:1.15rem;">
+  <div class="sec-title" style="font-size:1.05rem;">Keyword Reference</div>
+  <div class="sec-sub" style="font-size:0.86rem;">Use these while manually editing the updated resume.</div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+        html = "".join(f'<span class="chip-miss">{k}</span>' for k in recommended) or '<span style="color:var(--muted)">None</span>'
+        st.markdown(f'<div class="kw-box"><div class="kw-title">Priority Keywords</div><div class="chip-row">{html}</div></div>', unsafe_allow_html=True)
+
+        html = "".join(f'<span class="chip-miss">{k}</span>' for k in missing) or '<span style="color:var(--muted)">None</span>'
+        st.markdown(f'<div class="kw-box" style="margin-top:1rem;"><div class="kw-title">All Missing Keywords</div><div class="chip-row">{html}</div></div>', unsafe_allow_html=True)
+
+        html = "".join(f'<span class="chip-ok">{k}</span>' for k in present) or '<span style="color:var(--muted)">None</span>'
+        st.markdown(f'<div class="kw-box" style="margin-top:1rem;"><div class="kw-title">Already Present</div><div class="chip-row">{html}</div></div>', unsafe_allow_html=True)
 
     current_docx = (
         st.session_state.tailored_docx_bytes
@@ -1071,8 +1089,7 @@ if st.session_state.resume_processor is not None:
 <div class="dl-card">
   <div class="dl-title">Export Your Tailored Resume</div>
   <div class="dl-sub">
-    The DOCX download preserves your original formatting exactly.
-    Generate a PDF server-side, or open Google Drive's upload page to import your file into Google Docs.
+    Your selected suggestions and manual edits are now included. Download the updated DOCX below.
   </div>
 </div>
 """,
@@ -1096,7 +1113,7 @@ if st.session_state.resume_processor is not None:
         )
         st.markdown(
             '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">'
-            'Full formatting preserved — fonts, spacing, layout all intact.</div>',
+            'Selected suggestions + manual edits included.</div>',
             unsafe_allow_html=True,
         )
 
@@ -1128,7 +1145,7 @@ if st.session_state.resume_processor is not None:
             else:
                 st.markdown(
                     '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">'
-                    'Click Generate PDF first, then the download button appears.</div>',
+                    'Click Generate PDF first.</div>',
                     unsafe_allow_html=True,
                 )
         else:
@@ -1149,9 +1166,9 @@ if st.session_state.resume_processor is not None:
 <div style="background:rgba(79,139,255,0.07);border:1px solid rgba(79,139,255,0.18);
             border-radius:16px;padding:1rem 1.1rem;">
   <ol style="font-size:0.83rem;color:#9ab0cc;line-height:1.8;margin:0 0 0.85rem 1.1rem;padding:0;">
-    <li>Download the <strong style="color:#c5daff">DOCX</strong> using the button on the left</li>
-    <li>Click the button below — Google Drive upload page opens</li>
-    <li>Upload the DOCX, then right-click → <em>Open with Google Docs</em></li>
+    <li>Download the <strong style="color:#c5daff">DOCX</strong></li>
+    <li>Open Google Drive upload</li>
+    <li>Upload and open with Google Docs</li>
   </ol>
   <a href="https://drive.google.com/drive/my-drive?action=newfile" target="_blank"
      style="display:flex;align-items:center;justify-content:center;gap:0.5rem;
@@ -1168,6 +1185,6 @@ if st.session_state.resume_processor is not None:
     render_loading_bar("All done — resume tailored ✦", 100)
 
 st.markdown(
-    '<div class="footer-note">Rizzume ✦ — tailor faster, keep formatting, ship a cleaner application.</div>',
+    '<div class="footer-note">Rizzume ✦ — review suggestions, edit the updated resume, then export cleanly.</div>',
     unsafe_allow_html=True,
 )
