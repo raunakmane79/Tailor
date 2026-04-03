@@ -7,6 +7,7 @@ import requests
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
 
+
 class ATSUtils:
     @staticmethod
     def normalize_token(text: str) -> str:
@@ -16,6 +17,16 @@ class ATSUtils:
         text = re.sub(r"[^a-z0-9\-\+\#/\.& ]+", " ", text)
         text = re.sub(r"\s+", " ", text).strip()
         return text
+
+    @staticmethod
+    def normalize_compare_text(text: str) -> str:
+        if not isinstance(text, str):
+            return ""
+        text = text.strip().lower()
+        text = text.replace("–", "-").replace("—", "-")
+        text = text.replace("“", '"').replace("”", '"').replace("’", "'")
+        text = re.sub(r"\s+", " ", text)
+        return text.strip()
 
     @staticmethod
     def dedupe_keep_order(items: List[str]) -> List[str]:
@@ -213,12 +224,23 @@ class GeminiClient:
         except Exception as exc:
             raise ValueError(f"JSON parse failed: {exc}\n\nRaw response:\n{cleaned}") from exc
 
-    def _build_lines_block(self, lines: List[Dict[str, Any]]) -> str:
-        return "\n".join(
-            f"[{line['index']}] ({line['char_count']} chars) {line['text']}"
-            for line in lines
-            if isinstance(line, dict) and line.get("text", "").strip()
-        )
+    def _compute_char_budget(self, original_len: int, line_char_limit: int) -> int:
+        if original_len <= line_char_limit:
+            return line_char_limit
+        return line_char_limit * 2
+
+    def _build_lines_block(self, lines: List[Dict[str, Any]], line_char_limit: int) -> str:
+        output = []
+        for line in lines:
+            if not isinstance(line, dict) or not line.get("text", "").strip():
+                continue
+
+            char_count = int(line["char_count"])
+            char_budget = self._compute_char_budget(char_count, line_char_limit)
+            output.append(
+                f"[{line['index']}] ({char_count} chars, max {char_budget}) {line['text']}"
+            )
+        return "\n".join(output)
 
     def _dedupe_keep_order(self, items: List[str]) -> List[str]:
         return ATSUtils.dedupe_keep_order(items)
@@ -366,10 +388,11 @@ Key requirements:
         job_description: str,
         ats_analysis: Dict[str, Any],
         target_keywords: List[str],
+        line_char_limit: int,
     ) -> str:
         missing_keywords = ats_analysis.get("missing_keywords", [])
         key_requirements = ats_analysis.get("key_requirements", [])
-        lines_block = self._build_lines_block(lines)
+        lines_block = self._build_lines_block(lines, line_char_limit)
         keyword_block = self._build_keyword_prompt_block(
             target_keywords=target_keywords,
             fallback_missing_keywords=missing_keywords,
@@ -404,7 +427,6 @@ Hard rules:
 - Return 4 to 8 items max
 - options must contain exactly 3 strings
 - Do not invent fake experience, metrics, tools, dates, roles, achievements, certifications, or technologies
-- Keep each rewrite close in length to the original
 - Preserve the original meaning unless a small wording improvement is needed
 - Keywords must be naturally integrated into the sentence
 - Do NOT keyword stuff
@@ -423,6 +445,10 @@ Hard rules:
 - Prioritize the target missing keywords when adding ATS language
 - If no target keyword fits a line naturally, do not rewrite that line
 - keywords_added must only include keywords actually present in the rewrite
+- Each line has a maximum allowed character budget
+- If the original line fits within one visual line, keep the rewrite within one-line budget
+- If the original line exceeds one visual line, you may use up to two-line budget
+- Do not exceed the max character budget shown beside each line
 
 {keyword_block}
 
@@ -439,24 +465,27 @@ Job description:
         job_description: str,
         ats_analysis: Dict[str, Any],
         selected_keywords: Optional[List[str]] = None,
+        line_char_limit: int = 90,
         max_retries: int = 3,
     ) -> List[Dict[str, Any]]:
         if not isinstance(lines, list) or not lines:
             raise ValueError("No resume lines were provided.")
 
-        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:12]
+        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:10]
 
         prompt = self._build_suggestion_prompt(
             lines=lines,
             job_description=job_description,
             ats_analysis=ats_analysis,
             target_keywords=target_keywords,
+            line_char_limit=line_char_limit,
         )
 
         line_map = {
             line["index"]: {
                 "text": line["text"],
                 "char_count": line["char_count"],
+                "char_budget": self._compute_char_budget(line["char_count"], line_char_limit),
             }
             for line in lines
             if isinstance(line, dict)
@@ -495,11 +524,12 @@ Job description:
 
                     actual_original = line_map[line_index]["text"]
                     original_len = len(actual_original)
+                    char_budget = line_map[line_index]["char_budget"]
 
-                    if original.strip() != actual_original.strip():
+                    if ATSUtils.normalize_compare_text(original) != ATSUtils.normalize_compare_text(actual_original):
                         continue
 
-                    if not isinstance(options, list) or len(options) != 3:
+                    if not isinstance(options, list) or len(options) < 2:
                         continue
 
                     if not all(isinstance(opt, str) and opt.strip() for opt in options):
@@ -516,17 +546,24 @@ Job description:
                             continue
                         seen.add(opt_norm)
 
-                        if opt_clean == actual_original.strip():
+                        if ATSUtils.normalize_compare_text(opt_clean) == ATSUtils.normalize_compare_text(actual_original):
                             continue
 
-                        max_len_delta = max(18, int(max(1, original_len) * 0.45))
-                        if abs(len(opt_clean) - original_len) > max_len_delta:
+                        if len(opt_clean) > char_budget:
+                            continue
+
+                        min_reasonable_len = max(20, int(original_len * 0.50))
+                        if len(opt_clean) < min_reasonable_len:
                             continue
 
                         valid_options.append(opt_clean)
 
-                    if len(valid_options) != 3:
+                    if len(valid_options) < 2:
                         continue
+
+                    valid_options = valid_options[:3]
+                    while len(valid_options) < 3:
+                        valid_options.append(valid_options[-1])
 
                     if not isinstance(reason, str):
                         reason = ""
@@ -547,9 +584,6 @@ Job description:
 
                     option_keyword_hits = self._dedupe_keep_order(option_keyword_hits)
 
-                    if target_keywords and not option_keyword_hits and not keywords_added:
-                        continue
-
                     if not keywords_added:
                         keywords_added = option_keyword_hits
 
@@ -560,6 +594,7 @@ Job description:
                             "options": valid_options,
                             "reason": reason.strip(),
                             "keywords_added": keywords_added,
+                            "char_budget": char_budget,
                         }
                     )
 
