@@ -1287,7 +1287,6 @@ job_part = extract_job_title(job_description)
 file_stem = f"{name_part}_{job_part}_Resume"
 
 d1, d2, d3 = st.columns([1, 1, 1.2], gap="large")
-
     with d1:
         st.download_button(
             label="Download DOCX",
