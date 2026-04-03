@@ -554,6 +554,7 @@ defaults = {
     "_loading_stage": None,
     "_loading_pct": 0,
     "line_edits": {},
+    "line_char_limit": 90,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -789,10 +790,47 @@ if st.session_state.ats_analysis:
     for req in ats.get("key_requirements", []):
         st.markdown(f'<div class="req-item">→ {req}</div>', unsafe_allow_html=True)
 
+    st.markdown("### Formatting Control")
+    preset_col, slider_col = st.columns([1, 2], gap="large")
+
+    with preset_col:
+        char_preset = st.selectbox(
+            "Preset",
+            ["Compact", "Balanced", "Relaxed"],
+            index=1,
+            help="A quick way to set your target characters per visual line.",
+        )
+
+    preset_map = {
+        "Compact": 80,
+        "Balanced": 90,
+        "Relaxed": 100,
+    }
+
+    default_slider_value = st.session_state.get("line_char_limit", preset_map[char_preset])
+
+    with slider_col:
+        line_char_limit = st.slider(
+            "Target characters per visual line",
+            min_value=60,
+            max_value=130,
+            value=default_slider_value if default_slider_value in range(60, 131) else preset_map[char_preset],
+            step=5,
+            help="If an original bullet fits within this limit, AI keeps it within one line. If the original bullet exceeds this limit, AI can use up to two lines.",
+        )
+
+    if st.session_state.get("line_char_limit") != line_char_limit:
+        st.session_state.line_char_limit = line_char_limit
+
+    st.caption(
+        f"Current rule: bullets up to {st.session_state.line_char_limit} chars are treated as one-line bullets. "
+        f"Longer bullets can use up to {st.session_state.line_char_limit * 2} chars."
+    )
+
     gen_c1, _ = st.columns([1, 4], gap="large")
     with gen_c1:
         if st.button("Generate Suggestions", use_container_width=True):
-            lines = st.session_state.resume_processor.get_all_lines()
+            lines = st.session_state.resume_processor.get_all_lines(include_empty=False)
             render_loading_bar("Generating AI rewrites…", 65)
             with st.spinner(""):
                 try:
@@ -803,11 +841,19 @@ if st.session_state.ats_analysis:
                         or []
                     )
 
+                    candidate_lines = [
+                        line
+                        for line in lines
+                        if line.get("text", "").strip()
+                        and len(line.get("text", "").strip()) >= 20
+                    ]
+
                     sugs = client.generate_suggestions(
-                        lines=lines,
+                        lines=candidate_lines,
                         job_description=job_description,
                         ats_analysis=ats,
                         selected_keywords=target_keywords,
+                        line_char_limit=st.session_state.line_char_limit,
                     )
                     st.session_state.suggestions = sugs
                     st.session_state.choices_made = {}
@@ -834,7 +880,7 @@ if st.session_state.suggestions:
 <div class="sec-card">
   <div class="step-tag">Step 03</div>
   <div class="sec-title">Generated Suggestions</div>
-  <div class="sec-sub">Suggestions were generated using ATS gaps and missing keywords. Review and keep only the changes you want.</div>
+  <div class="sec-sub">Suggestions were generated using ATS gaps, missing keywords, and your formatting budget. Review and keep only the changes you want.</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -849,10 +895,14 @@ if st.session_state.suggestions:
         original = sug.get("original", "")
         options = sug.get("options", [])
         reason = sug.get("reason", "")
+        char_budget = sug.get("char_budget")
 
         st.markdown('<div class="sug-card">', unsafe_allow_html=True)
         st.markdown(f'<div class="line-label">Resume Line {li}</div>', unsafe_allow_html=True)
         st.code(original, language=None)
+
+        if char_budget:
+            st.caption(f"Allowed length for this line: up to {char_budget} characters")
 
         if reason:
             st.markdown(
