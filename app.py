@@ -692,14 +692,12 @@ st.markdown(
   }
 
   .login-page {
-  height: 100vh;              /* force exact viewport */
+  height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;   /* 👈 change this */
   justify-content: center;
-  overflow: hidden;           /* 🚨 removes scroll */
-  padding-top: 0;             /* remove extra space */
+  padding-top: 8vh;          /* 👈 pushes slightly down */
 }
-
   .login-card {
     width: 100%;
     max-width: 420px;
