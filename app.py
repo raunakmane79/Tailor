@@ -692,18 +692,19 @@ st.markdown(
   }
 
   .login-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.25rem 0.75rem;
-  }
+  height: 100vh;              /* force exact viewport */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;           /* 🚨 removes scroll */
+  padding-top: 0;             /* remove extra space */
+}
 
   .login-card {
     width: 100%;
     max-width: 420px;
     border-radius: 24px;
-    padding: 1.4rem 1.25rem 1.15rem;
+    padding: 1.2rem 1.2rem 0.8rem;
     background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 24px 70px rgba(0,0,0,0.42);
@@ -758,7 +759,7 @@ st.markdown(
   .login-form-wrap {
     margin-top: 1rem;
     border-radius: 18px;
-    padding: 1rem;
+    padding: 0.9rem;
     background: rgba(255,255,255,0.025);
     border: 1px solid rgba(255,255,255,0.06);
   }
@@ -772,7 +773,10 @@ st.markdown(
     margin: 0.1rem 0 0.3rem;
     text-align: left;
   }
-
+.block-container {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
   div[data-testid="stTextInput"] input {
     border-radius: 14px !important;
     min-height: 2.9rem !important;
