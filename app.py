@@ -3,6 +3,7 @@ import tempfile
 import subprocess
 import shutil
 import re
+import time
 
 import streamlit as st
 
@@ -64,135 +65,330 @@ st.markdown(
       var(--bg) !important;
   }
 
-  .block-container { max-width: 1360px; padding-top: 0.8rem; padding-bottom: 4rem; }
+  .block-container {
+    max-width: 1320px;
+    padding-top: 0.8rem;
+    padding-bottom: 3.2rem;
+  }
+
   header[data-testid="stHeader"] { background: transparent !important; }
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
 
   .pw-wrap {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 92vh; text-align: center; gap: 0;
+    min-height: 96vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
+  .pw-shell {
+    width: 100%;
+    max-width: 470px;
+    border-radius: 28px;
+    padding: 2rem 1.8rem 1.6rem;
+    background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.42);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
   .pw-badge {
-    width: 72px; height: 72px; border-radius: 22px;
-    background: linear-gradient(135deg, rgba(79,139,255,0.22), rgba(79,139,255,0.06));
-    border: 1px solid rgba(79,139,255,0.30);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2rem; font-weight: 900; color: #fff;
-    box-shadow: 0 0 40px rgba(79,139,255,0.18);
-    margin: 0 auto 1.2rem;
-    letter-spacing: -0.04em;
+    width: 74px;
+    height: 74px;
+    margin: 0 auto 1rem;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(79,139,255,0.25), rgba(79,139,255,0.08));
+    border: 1px solid rgba(79,139,255,0.28);
+    box-shadow: 0 0 44px rgba(79,139,255,0.18);
+    color: #fff;
+    font-size: 2rem;
+    font-weight: 900;
   }
+
   .pw-title {
     font-family: var(--font-head);
-    font-size: 2.6rem; font-weight: 800; letter-spacing: -0.06em;
-    color: #fff; line-height: 1; margin-bottom: 0.45rem;
+    font-size: 2.3rem;
+    font-weight: 800;
+    letter-spacing: -0.06em;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 0.35rem;
   }
+
   .pw-sub {
-    font-size: 1rem; color: var(--muted); margin-bottom: 2.2rem;
-    line-height: 1.65; max-width: 340px;
+    text-align: center;
+    font-size: 0.96rem;
+    color: var(--muted);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+
+  .auth-field-label {
+    font-size: 0.8rem;
+    color: #a8b4c7;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.35rem;
+  }
+
+  div[data-testid="stTextInput"] input {
+    border-radius: 16px !important;
+    min-height: 3.2rem !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
+    color: #edf3fb !important;
+    box-shadow: none !important;
+  }
+
+  div[data-testid="stTextInput"] input:focus {
+    border-color: rgba(79,139,255,0.45) !important;
+    box-shadow: 0 0 0 4px rgba(79,139,255,0.12) !important;
+  }
+
+  div[data-testid="stTextInput"] input::placeholder {
+    color: #718199 !important;
+    opacity: 1 !important;
+  }
+
+  .auth-footnote {
+    margin-top: 0.8rem;
+    text-align: center;
+    font-size: 0.82rem;
+    color: #6e7b8f;
   }
 
   .topbar {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 1rem; padding: 0.85rem 1.2rem;
-    border-radius: var(--r-lg); margin-bottom: 1.2rem;
-    background: rgba(11,17,32,0.85);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1.2rem;
+    border-radius: var(--r-lg);
+    margin-bottom: 1rem;
+    background: rgba(11,17,32,0.82);
     border: 1px solid var(--border);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    position: sticky; top: 0.5rem; z-index: 100;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    position: sticky;
+    top: 0.5rem;
+    z-index: 100;
   }
+
   .brand { display: flex; align-items: center; gap: 0.9rem; }
+
   .brand-dot {
-    width: 46px; height: 46px; border-radius: 14px;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
     background: linear-gradient(135deg, rgba(79,139,255,0.25), rgba(79,139,255,0.07));
     border: 1px solid rgba(79,139,255,0.28);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.15rem; color: #fff; font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    color: #fff;
+    font-weight: 900;
   }
+
   .brand-name {
-    font-family: var(--font-head); font-size: 1.15rem; font-weight: 800;
-    color: #fff; letter-spacing: -0.04em; line-height: 1.05;
+    font-family: var(--font-head);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
   }
-  .brand-tagline { font-size: 0.8rem; color: var(--muted); margin-top: 0.08rem; }
-  .topbar-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  .brand-tagline {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.08rem;
+  }
+
+  .topbar-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
   .tpill {
-    padding: 0.44rem 0.76rem; border-radius: 999px;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    color: #c8d4e3; font-size: 0.76rem; font-weight: 600;
-    letter-spacing: 0.01em;
+    padding: 0.44rem 0.76rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: #c8d4e3;
+    font-size: 0.76rem;
+    font-weight: 600;
   }
 
   .hero {
-    border-radius: var(--r-xl); padding: 2.2rem 2.2rem 2rem;
+    border-radius: var(--r-xl);
+    padding: 2rem 2rem 1.85rem;
     background: linear-gradient(145deg, rgba(255,255,255,0.048), rgba(255,255,255,0.018));
-    border: 1px solid var(--border); margin-bottom: 1.1rem;
-    box-shadow: var(--shadow); overflow: hidden; position: relative;
+    border: 1px solid var(--border);
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
   }
+
   .hero::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     background: radial-gradient(circle at 18% 10%, rgba(79,139,255,0.15), transparent 40%);
   }
-  .hero-grid { display: grid; grid-template-columns: 1.4fr 0.9fr; gap: 1.4rem; align-items: stretch; }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 0.8fr;
+    gap: 1.2rem;
+    align-items: stretch;
+  }
+
   .eyebrow {
-    display: inline-flex; align-items: center; gap: 0.38rem;
-    padding: 0.4rem 0.72rem; border-radius: 999px;
-    background: rgba(79,139,255,0.12); border: 1px solid rgba(79,139,255,0.22);
-    color: #c4d8ff; font-size: 0.72rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    padding: 0.4rem 0.72rem;
+    border-radius: 999px;
+    background: rgba(79,139,255,0.12);
+    border: 1px solid rgba(79,139,255,0.22);
+    color: #c4d8ff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.9rem;
   }
+
   .hero-title {
-    font-family: var(--font-head); font-size: clamp(2.6rem, 4.2vw, 4.4rem);
-    font-weight: 800; letter-spacing: -0.07em; line-height: 0.95;
-    color: #fff; margin: 0 0 0.9rem;
+    font-family: var(--font-head);
+    font-size: clamp(2.4rem, 4vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.07em;
+    line-height: 0.96;
+    color: #fff;
+    margin: 0 0 0.85rem;
   }
+
   .hero-title .grad {
     background: linear-gradient(90deg, #4f8bff 0%, #a8c8ff 70%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
-  .hero-body { font-size: 1.01rem; line-height: 1.82; color: #b8c8da; max-width: 580px; margin-bottom: 1rem; }
-  .pill-row { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+
+  .hero-body {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #b8c8da;
+    max-width: 560px;
+    margin-bottom: 1rem;
+  }
+
+  .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+  }
+
   .pill {
-    padding: 0.52rem 0.85rem; border-radius: 999px;
-    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-    color: #dce7f4; font-size: 0.82rem; font-weight: 600;
+    padding: 0.52rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    color: #dce7f4;
+    font-size: 0.82rem;
+    font-weight: 600;
   }
+
   .stat-panel {
-    border-radius: var(--r-lg); padding: 1.3rem;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    display: flex; flex-direction: column; justify-content: space-between;
-    height: 100%;
+    border-radius: var(--r-lg);
+    padding: 1.25rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100%;
   }
-  .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; color: var(--muted); margin-bottom: 0.4rem; }
-  .stat-big { font-family: var(--font-head); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.06em; color: #fff; line-height: 1; }
-  .stat-copy { font-size: 0.93rem; color: #9fb5cc; line-height: 1.75; margin-top: 0.5rem; }
-  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 1rem; }
-  .mini-box {
-    border-radius: 14px; padding: 0.85rem;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    transition: all 0.2s;
+
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
   }
-  .mini-box:hover { border-color: rgba(79,139,255,0.3); transform: translateY(-2px); }
-  .mini-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--muted); margin-bottom: 0.2rem; }
-  .mini-val { font-size: 0.96rem; color: #fff; font-weight: 700; }
+
+  .stat-big {
+    font-family: var(--font-head);
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.06em;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-copy {
+    font-size: 0.93rem;
+    color: #9fb5cc;
+    line-height: 1.75;
+  }
 
   .sec-card {
-    border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
+    border-radius: var(--r-xl);
+    padding: 1.4rem 1.5rem;
     background: linear-gradient(160deg, rgba(255,255,255,0.046), rgba(255,255,255,0.018));
-    border: 1px solid var(--border); margin-bottom: 1rem;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+    border: 1px solid var(--border);
+    margin-bottom: 0.95rem;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.18);
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .sec-card:hover { border-color: rgba(79,139,255,0.2); box-shadow: 0 16px 42px rgba(0,0,0,0.28); }
-  .step-tag {
-    display: inline-block; padding: 0.3rem 0.62rem; border-radius: 999px;
-    background: rgba(79,139,255,0.1); border: 1px solid rgba(79,139,255,0.2);
-    color: #c5daff; font-size: 0.7rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.7rem;
+
+  .sec-card:hover {
+    border-color: rgba(79,139,255,0.2);
+    box-shadow: 0 16px 42px rgba(0,0,0,0.24);
   }
-  .sec-title { font-family: var(--font-head); font-size: 1.3rem; font-weight: 700; color: #fff; letter-spacing: -0.03em; margin-bottom: 0.2rem; }
-  .sec-sub { font-size: 0.94rem; color: #9aacbf; line-height: 1.72; }
+
+  .step-tag {
+    display: inline-block;
+    padding: 0.3rem 0.62rem;
+    border-radius: 999px;
+    background: rgba(79,139,255,0.1);
+    border: 1px solid rgba(79,139,255,0.2);
+    color: #c5daff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    margin-bottom: 0.7rem;
+  }
+
+  .sec-title {
+    font-family: var(--font-head);
+    font-size: 1.28rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.2rem;
+  }
+
+  .sec-sub {
+    font-size: 0.94rem;
+    color: #9aacbf;
+    line-height: 1.72;
+  }
 
   div[data-testid="stFileUploader"] {
     border: 1.5px dashed rgba(255,255,255,0.14) !important;
@@ -200,170 +396,293 @@ st.markdown(
     padding: 0.6rem !important;
     background: rgba(255,255,255,0.025) !important;
   }
-  div[data-testid="stFileUploader"] section { background: transparent !important; }
+
+  div[data-testid="stFileUploader"] section {
+    background: transparent !important;
+  }
 
   div[data-testid="stTextArea"] textarea {
     border-radius: var(--r-md) !important;
     border: 1px solid rgba(255,255,255,0.14) !important;
     background: #f7f9fc !important;
-    color: #0d1422 !important; -webkit-text-fill-color: #0d1422 !important;
-    padding: 1rem !important; min-height: 280px !important;
-    font-family: var(--font-body) !important; font-size: 0.96rem !important;
-    line-height: 1.72 !important; box-shadow: none !important;
+    color: #0d1422 !important;
+    -webkit-text-fill-color: #0d1422 !important;
+    padding: 1rem !important;
+    min-height: 280px !important;
+    font-family: var(--font-body) !important;
+    font-size: 0.96rem !important;
+    line-height: 1.72 !important;
+    box-shadow: none !important;
   }
-  div[data-testid="stTextArea"] textarea::placeholder { color: #7a8694 !important; opacity: 1 !important; }
+
+  div[data-testid="stTextArea"] textarea::placeholder {
+    color: #7a8694 !important;
+    opacity: 1 !important;
+  }
+
   div[data-testid="stTextArea"] textarea:focus {
     border-color: rgba(79,139,255,0.5) !important;
-    box-shadow: 0 0 0 4px rgba(79,139,255,0.14) !important; outline: none !important;
+    box-shadow: 0 0 0 4px rgba(79,139,255,0.14) !important;
+    outline: none !important;
   }
 
   .stFileUploader label, .stTextArea label, label {
     font-family: var(--font-body) !important;
-    color: #dde5f0 !important; font-weight: 600 !important; font-size: 0.95rem !important;
+    color: #dde5f0 !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
   }
 
-  .stButton > button, .stDownloadButton > button {
-    width: 100% !important; border-radius: var(--r-md) !important; min-height: 3rem !important;
-    font-family: var(--font-body) !important; font-weight: 700 !important; font-size: 0.96rem !important;
+  .stButton > button,
+  .stDownloadButton > button,
+  div[data-testid="stFormSubmitButton"] > button {
+    width: 100% !important;
+    border-radius: 16px !important;
+    min-height: 3rem !important;
+    font-family: var(--font-body) !important;
+    font-weight: 700 !important;
+    font-size: 0.96rem !important;
     border: none !important;
     background: linear-gradient(135deg, #3a74f0, #5d95ff) !important;
-    color: #fff !important; box-shadow: 0 10px 28px rgba(79,139,255,0.28);
+    color: #fff !important;
+    box-shadow: 0 10px 28px rgba(79,139,255,0.28);
     transition: all 0.18s ease !important;
   }
-  .stButton > button:hover, .stDownloadButton > button:hover {
+
+  .stButton > button:hover,
+  .stDownloadButton > button:hover,
+  div[data-testid="stFormSubmitButton"] > button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 14px 32px rgba(79,139,255,0.42) !important;
     filter: brightness(1.05) !important;
   }
 
-  div[data-testid="stProgressBar"] > div {
-    background: rgba(255,255,255,0.07) !important;
-    border-radius: 999px !important; height: 10px !important;
-  }
-  div[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, #3a74f0, #6fa8ff) !important;
-    border-radius: 999px !important; transition: width 0.4s ease !important;
-  }
-
   .metric-shell {
-    border-radius: var(--r-lg); padding: 1.1rem 1.15rem;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 1.05rem 1.1rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
     transition: all 0.22s;
   }
-  .metric-shell:hover { border-color: rgba(79,139,255,0.24); transform: translateY(-2px); }
-  [data-testid="metric-container"] { background: transparent !important; border: none !important; padding: 0 !important; }
-  [data-testid="metric-container"] label {
-    font-family: var(--font-body) !important; color: var(--muted) !important;
-    font-weight: 700 !important; font-size: 0.7rem !important;
-    text-transform: uppercase; letter-spacing: 0.09em;
+
+  .metric-shell:hover {
+    border-color: rgba(79,139,255,0.24);
+    transform: translateY(-2px);
   }
+
+  [data-testid="metric-container"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  [data-testid="metric-container"] label {
+    font-family: var(--font-body) !important;
+    color: var(--muted) !important;
+    font-weight: 700 !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+  }
+
   [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    font-family: var(--font-head) !important; color: #fff !important;
-    font-size: 2.1rem !important; font-weight: 800 !important; letter-spacing: -0.04em !important;
+    font-family: var(--font-head) !important;
+    color: #fff !important;
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.04em !important;
   }
 
   .kw-box {
-    border-radius: var(--r-lg); padding: 1.05rem 1.1rem;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 1.05rem 1.1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
     min-height: 180px;
   }
-  .kw-title { font-weight: 700; font-size: 0.97rem; color: #e2eaf4; margin-bottom: 0.75rem; }
-  .chip-row { display: flex; flex-wrap: wrap; gap: 0.48rem; }
-  .chip-ok {
-    background: rgba(34,197,94,0.12); color: #bbf7d0;
-    border: 1px solid rgba(34,197,94,0.24); padding: 0.38rem 0.68rem;
-    border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+
+  .kw-title {
+    font-weight: 700;
+    font-size: 0.97rem;
+    color: #e2eaf4;
+    margin-bottom: 0.75rem;
   }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.48rem;
+  }
+
+  .chip-ok {
+    background: rgba(34,197,94,0.12);
+    color: #bbf7d0;
+    border: 1px solid rgba(34,197,94,0.24);
+    padding: 0.38rem 0.68rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
   .chip-miss {
-    background: rgba(245,158,11,0.12); color: #fde68a;
-    border: 1px solid rgba(245,158,11,0.24); padding: 0.38rem 0.68rem;
-    border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+    background: rgba(245,158,11,0.12);
+    color: #fde68a;
+    border: 1px solid rgba(245,158,11,0.24);
+    padding: 0.38rem 0.68rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
   }
 
   .req-item {
-    padding: 0.85rem 1rem; border-radius: var(--r-sm);
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    color: #cdd8e7; font-size: 0.94rem; line-height: 1.68; margin-bottom: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--r-sm);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    color: #cdd8e7;
+    font-size: 0.94rem;
+    line-height: 1.68;
+    margin-bottom: 0.6rem;
   }
 
   .sug-card {
-    border-radius: var(--r-lg); padding: 1.1rem 1.15rem; margin-bottom: 0.9rem;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    transition: border-color 0.2s;
+    border-radius: var(--r-lg);
+    padding: 1.1rem 1.15rem;
+    margin-bottom: 0.9rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
   }
-  .sug-card:hover { border-color: rgba(79,139,255,0.2); }
-  .line-label { font-size: 0.73rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.42rem; }
+
+  .line-label {
+    font-size: 0.73rem;
+    color: var(--muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    margin-bottom: 0.42rem;
+  }
+
   .reason-box {
-    background: rgba(79,139,255,0.08); border: 1px solid rgba(79,139,255,0.18);
-    border-radius: 12px; padding: 0.85rem 1rem;
-    color: #c8daff; margin: 0.75rem 0; font-size: 0.93rem; line-height: 1.65;
+    background: rgba(79,139,255,0.08);
+    border: 1px solid rgba(79,139,255,0.18);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    color: #c8daff;
+    margin: 0.75rem 0;
+    font-size: 0.93rem;
+    line-height: 1.65;
   }
 
   div[role="radiogroup"] > label {
     background: rgba(255,255,255,0.03) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--r-md) !important;
-    padding: 0.9rem 1rem !important; margin-bottom: 0.6rem !important;
-    transition: all 0.18s ease !important;
-    min-height: 58px !important;
+    padding: 0.9rem 1rem !important;
+    margin-bottom: 0.6rem !important;
   }
+
   div[role="radiogroup"] > label:hover {
     border-color: rgba(79,139,255,0.34) !important;
     background: rgba(79,139,255,0.05) !important;
-    transform: translateY(-1px) !important;
-  }
-  div[role="radiogroup"] > label p,
-  div[role="radiogroup"] > label span,
-  div[role="radiogroup"] > label div {
-    color: #dce8f5 !important; font-family: var(--font-body) !important;
-    font-size: 0.96rem !important; line-height: 1.6 !important;
   }
 
   div[data-testid="stCodeBlock"] {
-    border-radius: 14px !important; overflow: hidden !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
   }
-  div[data-testid="stCodeBlock"] pre, div[data-testid="stCodeBlock"] code {
+
+  div[data-testid="stCodeBlock"] pre,
+  div[data-testid="stCodeBlock"] code {
     font-family: var(--font-mono) !important;
-    white-space: pre-wrap !important; word-break: break-word !important;
-    font-size: 0.88rem !important; line-height: 1.65 !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    font-size: 0.88rem !important;
+    line-height: 1.65 !important;
   }
 
   .load-wrap { margin: 0.5rem 0 1.2rem; }
-  .load-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+  .load-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
   .load-label { font-size: 0.86rem; font-weight: 600; color: var(--muted); }
-  .load-pct { font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; color: var(--accent2); letter-spacing: -0.03em; }
+  .load-pct {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--accent2);
+    letter-spacing: -0.03em;
+  }
   .load-track {
-    width: 100%; height: 8px; border-radius: 999px;
-    background: rgba(255,255,255,0.07); overflow: hidden;
+    width: 100%;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden;
   }
   .load-fill {
-    height: 100%; border-radius: 999px;
+    height: 100%;
+    border-radius: 999px;
     background: linear-gradient(90deg, #3a74f0, #6fa8ff);
     transition: width 0.5s cubic-bezier(.4,0,.2,1);
     box-shadow: 0 0 12px rgba(79,139,255,0.5);
   }
 
   .dl-card {
-    border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
+    border-radius: var(--r-xl);
+    padding: 1.5rem 1.6rem;
     background: linear-gradient(145deg, rgba(79,139,255,0.08), rgba(79,139,255,0.025));
-    border: 1px solid rgba(79,139,255,0.18); margin-top: 0.8rem;
+    border: 1px solid rgba(79,139,255,0.18);
+    margin-top: 0.8rem;
     box-shadow: 0 12px 32px rgba(0,0,0,0.2);
   }
-  .dl-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
-  .dl-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.1rem; }
+
+  .dl-title {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.03em;
+  }
+
+  .dl-sub {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 1.1rem;
+  }
 
   .success-bar {
-    padding: 0.88rem 1rem; border-radius: 14px;
-    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
-    color: #bbf7d0; font-size: 0.92rem; font-weight: 500; margin-bottom: 0.9rem;
+    padding: 0.88rem 1rem;
+    border-radius: 14px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.2);
+    color: #bbf7d0;
+    font-size: 0.92rem;
+    font-weight: 500;
+    margin-bottom: 0.9rem;
   }
+
   .empty-card {
-    padding: 1.3rem; border-radius: var(--r-lg); text-align: center;
-    background: rgba(255,255,255,0.025); border: 1px dashed var(--border);
-    color: var(--muted); font-size: 0.94rem; margin-top: 0.5rem;
+    padding: 1.3rem;
+    border-radius: var(--r-lg);
+    text-align: center;
+    background: rgba(255,255,255,0.025);
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    font-size: 0.94rem;
+    margin-top: 0.5rem;
   }
-  .footer-note { text-align: center; color: var(--subtle); margin-top: 1.5rem; font-size: 0.87rem; }
+
+  .footer-note {
+    text-align: center;
+    color: var(--subtle);
+    margin-top: 1.5rem;
+    font-size: 0.87rem;
+  }
 
   div[data-baseweb="notification"] { border-radius: 16px !important; }
 
@@ -380,14 +699,79 @@ st.markdown(
 # PASSWORD GATE
 # ---------------------------------------------------
 def check_password():
-    def _submit():
-        if st.session_state.get("pw_input") == st.secrets.get("APP_PASSWORD", ""):
+    if st.session_state.get("_auth"):
+        return True
+
+    def _authenticate():
+        entered_password = st.session_state.get("pw_input", "")
+        if entered_password == st.secrets.get("APP_PASSWORD", ""):
+            progress = st.progress(0)
+            status = st.empty()
+            for i in range(101):
+                progress.progress(i)
+                if i < 35:
+                    status.markdown("Authenticating ✦")
+                elif i < 75:
+                    status.markdown("Loading workspace ✦")
+                else:
+                    status.markdown("Almost there ✦")
+                time.sleep(0.02)  # ~2 seconds total
+            progress.empty()
+            status.empty()
             st.session_state["_auth"] = True
+            st.session_state["_auth_fail"] = False
+            st.rerun()
         else:
             st.session_state["_auth_fail"] = True
 
-    if st.session_state.get("_auth"):
-        return True
+    st.markdown(
+        """
+<div class="pw-wrap">
+  <div class="pw-shell">
+    <div class="pw-badge">✦</div>
+    <div class="pw-title">Rizzume</div>
+    <div class="pw-sub">Secure access for your resume tailoring workspace.</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    _, center_col, _ = st.columns([1, 1.25, 1])
+
+    with center_col:
+        with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
+            st.markdown('<div class="auth-field-label">Log In ID</div>', unsafe_allow_html=True)
+            st.text_input(
+                "Log In ID",
+                key="login_id_input",
+                label_visibility="collapsed",
+                placeholder="Enter any ID",
+            )
+
+            st.markdown('<div class="auth-field-label">Password</div>', unsafe_allow_html=True)
+            st.text_input(
+                "Password",
+                type="password",
+                key="pw_input",
+                label_visibility="collapsed",
+                placeholder="Enter password",
+            )
+
+            submitted = st.form_submit_button("Enter ✦", use_container_width=True)
+
+            if submitted:
+                _authenticate()
+
+        if st.session_state.get("_auth_fail"):
+            st.error("Incorrect password. Please try again.")
+
+        st.markdown(
+            '<div class="auth-footnote">Log In ID is visual only. Password controls access.</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+    return False
 
     st.markdown(
         """
@@ -578,20 +962,19 @@ st.markdown(
     <div class="brand-dot">✦</div>
     <div>
       <div class="brand-name">Rizzume</div>
-      <div class="brand-tagline">Resume tailoring that ships sharp, clean, and recruiter-ready</div>
+      <div class="brand-tagline">AI resume tailoring, refined and export-ready</div>
     </div>
   </div>
   <div class="topbar-pills">
-    <div class="tpill">ATS Match</div>
-    <div class="tpill">Format Safe</div>
-    <div class="tpill">DOCX + PDF</div>
-    <div class="tpill">Inline Editor</div>
+    <div class="tpill">✦ ATS</div>
+    <div class="tpill">✦ Rewrites</div>
+    <div class="tpill">✦ Editor</div>
+    <div class="tpill">✦ Export</div>
   </div>
 </div>
 """,
     unsafe_allow_html=True,
 )
-
 # ---------------------------------------------------
 # HERO
 # ---------------------------------------------------
@@ -600,26 +983,24 @@ st.markdown(
 <div class="hero">
   <div class="hero-grid">
     <div>
-      <div class="eyebrow">✦ Smarter Resume Tailoring</div>
-      <div class="hero-title"><span class="grad">Rizzume</span><br>Rizz up your recruiter</div>
-      <div class="hero-body">Upload your resume, paste the job description, and tailor each line without breaking the format. Spot keyword gaps, get sharper rewrites, edit after selection, and export a clean final version.</div>
+      <div class="eyebrow">✦ Premium Resume Tailoring</div>
+      <div class="hero-title"><span class="grad">Rizzume</span><br>Built to tailor. Designed to impress.</div>
+      <div class="hero-body">
+        Upload your resume, paste the job description, identify keyword gaps, choose stronger rewrites, refine manually, and export a polished final version without breaking your layout.
+      </div>
       <div class="pill-row">
-        <div class="pill">ATS Analysis</div>
-        <div class="pill">Keyword Match</div>
-        <div class="pill">Line Rewrites</div>
-        <div class="pill">Keyword Reference</div>
-        <div class="pill">Export Ready</div>
+        <div class="pill">✦ ATS Analysis</div>
+        <div class="pill">✦ Keyword Match</div>
+        <div class="pill">✦ AI Suggestions</div>
+        <div class="pill">✦ Inline Editing</div>
+        <div class="pill">✦ DOCX + PDF</div>
       </div>
     </div>
     <div class="stat-panel">
-      <div>
-        <div class="stat-label">What it does</div>
-        <div class="stat-big">Tailor faster</div>
-        <div class="stat-copy">Review ATS gaps, accept the best rewrites, then manually fine-tune the updated resume with keyword guidance on the side.</div>
-      </div>
-      <div class="mini-grid">
-        <div class="mini-box"><div class="mini-label">Focus</div><div class="mini-val">ATS + Clarity</div></div>
-        <div class="mini-box"><div class="mini-label">Brand</div><div class="mini-val">Rizzume ✦</div></div>
+      <div class="stat-label">Why it feels better</div>
+      <div class="stat-big">Cleaner. Sharper. Faster.</div>
+      <div class="stat-copy">
+        A focused workflow for tailoring resumes with less clutter, clearer actions, and a more premium product feel from login to export.
       </div>
     </div>
   </div>
@@ -627,7 +1008,6 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
-
 # ---------------------------------------------------
 # WORKFLOW PROGRESS
 # ---------------------------------------------------
@@ -641,8 +1021,9 @@ if st.session_state.suggestions:
 if st.session_state.ready_for_manual_edit:
     steps = 4
 
-labels = ["Upload", "ATS Analysis", "Suggestions", "Edit & Export"]
-render_loading_bar(f"Workflow — {labels[min(steps, 3)]}", int(steps / 4 * 100))
+labels = ["Upload", "Analyze", "Refine", "Export"]
+render_loading_bar(f"Workflow ✦ {labels[min(steps, 3)]}", int(steps / 4 * 100))
+
 
 # ---------------------------------------------------
 # STEP 1 — INPUTS
@@ -686,7 +1067,7 @@ if uploaded_file is not None:
 u1, u2, _ = st.columns([1, 1, 4], gap="large")
 
 with u1:
-    if st.button("Analyze ATS Match", use_container_width=True):
+    if st.button("Analyze ATS Match", use_container_width=True, key="analyze_ats_btn"):
         if st.session_state.resume_processor is None:
             st.warning("Please upload a resume first.")
         elif not job_description.strip():
@@ -711,7 +1092,7 @@ with u1:
                     st.error(f"ATS analysis failed: {e}")
 
 with u2:
-    if st.button("Reset", use_container_width=True):
+    if st.button("Reset", use_container_width=True, key="reset_app_btn"):
         full_reset()
         st.rerun()
 
@@ -814,7 +1195,7 @@ if st.session_state.ats_analysis:
 
     gen_c1, _ = st.columns([1, 4], gap="large")
     with gen_c1:
-        if st.button("Generate Suggestions", use_container_width=True):
+        if st.button("Generate Suggestions", use_container_width=True, key="generate_suggestions_btn"):
             lines = st.session_state.resume_processor.get_all_lines(include_empty=False)
             render_loading_bar("Generating AI rewrites…", 65)
             with st.spinner(""):
@@ -913,7 +1294,7 @@ if st.session_state.suggestions:
 
     ap1, _ = st.columns([1, 4], gap="large")
     with ap1:
-        if st.button("Apply Selected Changes & Open Editor", use_container_width=True):
+        if st.button("Apply Selected Changes & Open Editor", use_container_width=True, key="apply_selected_btn"):
             if st.session_state.resume_processor is None:
                 st.error("Resume processor not found. Re-upload your resume.")
             else:
@@ -1016,7 +1397,7 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
 
         apply_col, _ = st.columns([1, 3], gap="large")
         with apply_col:
-            if st.button("✅ Apply Manual Edits → Rebuild DOCX", use_container_width=True):
+            if st.button("Apply Manual Edits", use_container_width=True, key="rebuild_docx_btn"):
                 try:
                     if uploaded_file is not None:
                         fresh_proc = ResumeProcessor(uploaded_file.getvalue())
@@ -1124,7 +1505,7 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
             unsafe_allow_html=True,
         )
         if SOFFICE_AVAILABLE:
-            if st.button("⚙ Generate PDF", use_container_width=True):
+            if st.button("Generate PDF", use_container_width=True, key="generate_pdf_btn"):
                 render_loading_bar("Converting to PDF…", 85)
                 with st.spinner(""):
                     try:
@@ -1136,7 +1517,7 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
 
             if st.session_state.pdf_bytes:
                 st.download_button(
-                    label="⬇ Download PDF",
+                    label="Download PDF",
                     data=st.session_state.pdf_bytes,
                     file_name=f"{file_stem}.pdf",
                     mime="application/pdf",
@@ -1185,6 +1566,6 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
     render_loading_bar("All done — resume tailored ✦", 100)
 
 st.markdown(
-    '<div class="footer-note">Rizzume ✦ — review suggestions, edit the updated resume, then export cleanly.</div>',
+    '<div class="footer-note">Rizzume ✦</div>',
     unsafe_allow_html=True,
 )
