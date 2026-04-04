@@ -56,23 +56,29 @@ st.markdown(
     background: var(--bg) !important;
   }
 
+  /* Make the whole app background the login background */
   .stApp {
     background:
-      radial-gradient(ellipse 60% 40% at 10% 5%, rgba(79,139,255,0.13) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 35% at 90% 85%, rgba(79,139,255,0.08) 0%, transparent 55%),
-      var(--bg) !important;
+      radial-gradient(ellipse 80% 60% at 15% 5%, rgba(79,139,255,0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 88% 90%, rgba(79,139,255,0.09) 0%, transparent 55%),
+      #05080f !important;
+    min-height: 100vh;
   }
-
+ 
+  /* Strip ALL default streamlit padding/margin for login */
   .block-container {
-    max-width: 1360px;
-    padding-top: 0.8rem;
-    padding-bottom: 4rem;
+    max-width: 480px !important;
+    padding-top: 0 !important;
+    padding-bottom: 2rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin: 0 auto !important;
   }
-
-  header[data-testid="stHeader"] { background: transparent !important; }
+ 
+  header[data-testid="stHeader"] { display: none !important; }
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
-
+  footer { display: none !important; }
    /* ---- LOGIN CARD ---- */
   .lcard {
     margin-top: max(6vh, 2.5rem);
