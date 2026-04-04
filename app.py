@@ -882,11 +882,7 @@ def check_password():
           <div class="lmark">✦</div>
           <div class="ltitle">Rizzume</div>
           <div class="lsub"></div>
-          <div class="lpills">
-            <span class="lpill">✦</span>
-            <span class="lpill">✦</span>
-            <span class="lpill"✦</span>
-          </div>
+    
           <div class="ldivider"></div>
         </div>
         """,
@@ -895,7 +891,7 @@ def check_password():
 
     with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
         st.markdown('<span class="alabel">Login ID</span>', unsafe_allow_html=True)
-        st.text_input("Login ID", key="login_id_input", label_visibility="collapsed", placeholder="Enter any ID")
+        st.text_input("Login ID", key="login_id_input", label_visibility="collapsed", placeholder="Enter ID")
 
         st.markdown('<span class="alabel">Password</span>', unsafe_allow_html=True)
         st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed", placeholder="••••••••••")
