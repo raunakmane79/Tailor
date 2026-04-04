@@ -881,11 +881,11 @@ def check_password():
         <div class="lcard">
           <div class="lmark">✦</div>
           <div class="ltitle">Rizzume</div>
-          <div class="lsub">Premium resume tailoring,<br>refined and export-ready.</div>
+          <div class="lsub"></div>
           <div class="lpills">
-            <span class="lpill">ATS Match</span>
-            <span class="lpill">AI Rewrites</span>
-            <span class="lpill">DOCX Export</span>
+            <span class="lpill">✦</span>
+            <span class="lpill">✦</span>
+            <span class="lpill"✦</span>
           </div>
           <div class="ldivider"></div>
         </div>
