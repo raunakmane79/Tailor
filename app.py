@@ -73,9 +73,8 @@ st.markdown(
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
 
-  /* ---------------- LOGIN ---------------- */
-
-  .login-scope .lcard {
+   /* ---- LOGIN CARD ---- */
+  .lcard {
     margin-top: max(6vh, 2.5rem);
     border-radius: 28px;
     padding: 2.5rem 2rem 2rem;
@@ -86,8 +85,8 @@ st.markdown(
       inset 0 1px 0 rgba(255,255,255,0.05);
     text-align: center;
   }
-
-  .login-scope .lmark {
+ 
+  .lmark {
     width: 54px;
     height: 54px;
     margin: 0 auto 1.3rem;
@@ -101,8 +100,8 @@ st.markdown(
     font-size: 1.45rem;
     color: #fff;
   }
-
-  .login-scope .ltitle {
+ 
+  .ltitle {
     font-family: var(--font-head);
     font-size: 2.1rem;
     font-weight: 800;
@@ -111,40 +110,40 @@ st.markdown(
     line-height: 1;
     margin-bottom: 0.5rem;
   }
-
-  .login-scope .lsub {
+ 
+  .lsub {
     font-size: 0.87rem;
     color: #5d7290;
     line-height: 1.6;
     margin-bottom: 1.4rem;
   }
-
-  .login-scope .lpills {
+ 
+  .lpills {
     display: flex;
     justify-content: center;
     gap: 0.4rem;
     flex-wrap: wrap;
     margin-bottom: 1.6rem;
   }
-
-  .login-scope .lpill {
+ 
+  .lpill {
     padding: 0.28rem 0.58rem;
     border-radius: 999px;
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.07);
-    color: #93a4bb;
+    color: #445566;
     font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.03em;
   }
-
-  .login-scope .ldivider {
+ 
+  .ldivider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
     margin-bottom: 1.5rem;
   }
-
-  .login-scope .alabel {
+ 
+  .alabel {
     display: block;
     text-align: left;
     font-size: 0.7rem;
@@ -155,37 +154,36 @@ st.markdown(
     margin-bottom: 0.35rem;
     margin-top: 0.85rem;
   }
-
-  .login-scope div[data-testid="stTextInput"] input {
+ 
+  /* Input fields */
+  div[data-testid="stTextInput"] input {
     border-radius: 14px !important;
     min-height: 3rem !important;
     background: rgba(255,255,255,0.038) !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
     color: #edf3fb !important;
-    -webkit-text-fill-color: #edf3fb !important;
-    caret-color: #edf3fb !important;
     box-shadow: none !important;
     padding-left: 1rem !important;
     font-size: 0.94rem !important;
     transition: border-color 0.15s, box-shadow 0.15s !important;
   }
-
-  .login-scope div[data-testid="stTextInput"] input:focus {
+ 
+  div[data-testid="stTextInput"] input:focus {
     border-color: rgba(79,139,255,0.48) !important;
-    box-shadow: 0 0 0 3px rgba(79,139,255,0.10) !important;
+    box-shadow: 0 0 0 3px rgba(79,139,255,0.1) !important;
     background: rgba(255,255,255,0.055) !important;
   }
-
-  .login-scope div[data-testid="stTextInput"] input::placeholder {
-    color: #718199 !important;
+ 
+  div[data-testid="stTextInput"] input::placeholder {
+    color: #2d3d52 !important;
     opacity: 1 !important;
   }
-
-  .login-scope div[data-testid="stTextInput"] label {
-    display: none !important;
-  }
-
-  .login-scope div[data-testid="stFormSubmitButton"] > button {
+ 
+  /* Hide the default Streamlit input label */
+  div[data-testid="stTextInput"] label { display: none !important; }
+ 
+  /* Submit button */
+  div[data-testid="stFormSubmitButton"] > button {
     width: 100% !important;
     border-radius: 14px !important;
     min-height: 3.1rem !important;
@@ -200,25 +198,24 @@ st.markdown(
     box-shadow: 0 8px 28px rgba(79,139,255,0.22) !important;
     transition: all 0.18s ease !important;
   }
-
-  .login-scope div[data-testid="stFormSubmitButton"] > button:hover {
+ 
+  div[data-testid="stFormSubmitButton"] > button:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 14px 36px rgba(79,139,255,0.36) !important;
     filter: brightness(1.07) !important;
   }
-
-  .login-scope div[data-testid="stFormSubmitButton"] > button:active {
+ 
+  div[data-testid="stFormSubmitButton"] > button:active {
     transform: translateY(0px) !important;
   }
-
-  .login-scope .lnote {
+ 
+  .lnote {
     margin-top: 1.3rem;
     text-align: center;
     font-size: 0.74rem;
     color: #2a3a4d;
     letter-spacing: 0.03em;
   }
-
   /* ---------------- APP INPUTS ---------------- */
 
   div[data-testid="stTextInput"] input {
