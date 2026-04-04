@@ -26,7 +26,7 @@ st.markdown(
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
-  :root {
+ :root {
     --bg:       #05080f;
     --surface:  #0b1120;
     --card:     #0f1929;
@@ -37,7 +37,6 @@ st.markdown(
     --subtle:   #5a6373;
     --accent:   #4f8bff;
     --accent2:  #7ba7ff;
-    --accentRg: 79,139,255;
     --green:    #22c55e;
     --amber:    #f59e0b;
     --red:      #ef4444;
@@ -68,7 +67,149 @@ st.markdown(
   header[data-testid="stHeader"] { background: transparent !important; }
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
+ /* ---- LOGIN CARD ---- */
+  .lcard {
+    margin-top: max(6vh, 2.5rem);
+    border-radius: 28px;
+    padding: 2.5rem 2rem 2rem;
+    background: linear-gradient(160deg, rgba(255,255,255,0.058), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 40px 100px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    text-align: center;
+  }
 
+  .lmark {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 1.3rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(79,139,255,0.24), rgba(79,139,255,0.07));
+    border: 1px solid rgba(79,139,255,0.30);
+    box-shadow: 0 8px 28px rgba(79,139,255,0.20);
+    font-size: 1.45rem;
+    color: #fff;
+  }
+
+  .ltitle {
+    font-family: var(--font-head);
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -0.07em;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .lsub {
+    font-size: 0.87rem;
+    color: #5d7290;
+    line-height: 1.6;
+    margin-bottom: 1.4rem;
+  }
+
+  .lpills {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.6rem;
+  }
+
+  .lpill {
+    padding: 0.28rem 0.58rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: #445566;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+
+  .ldivider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+    margin-bottom: 1.5rem;
+  }
+
+  .alabel {
+    display: block;
+    text-align: left;
+    font-size: 0.7rem;
+    color: #4a6080;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.35rem;
+    margin-top: 0.85rem;
+  }
+
+  /* Input fields */
+  div[data-testid="stTextInput"] input {
+    border-radius: 14px !important;
+    min-height: 3rem !important;
+    background: rgba(255,255,255,0.038) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    color: #edf3fb !important;
+    box-shadow: none !important;
+    padding-left: 1rem !important;
+    font-size: 0.94rem !important;
+    transition: border-color 0.15s, box-shadow 0.15s !important;
+  }
+
+  div[data-testid="stTextInput"] input:focus {
+    border-color: rgba(79,139,255,0.48) !important;
+    box-shadow: 0 0 0 3px rgba(79,139,255,0.1) !important;
+    background: rgba(255,255,255,0.055) !important;
+  }
+
+  div[data-testid="stTextInput"] input::placeholder {
+    color: #2d3d52 !important;
+    opacity: 1 !important;
+  }
+
+  /* Hide the default Streamlit input label */
+  div[data-testid="stTextInput"] label { display: none !important; }
+
+  /* Submit button */
+  div[data-testid="stFormSubmitButton"] > button {
+    width: 100% !important;
+    border-radius: 14px !important;
+    min-height: 3.1rem !important;
+    margin-top: 1.2rem !important;
+    font-family: var(--font-body) !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+    background: linear-gradient(135deg, #2e62d9, #5590ff) !important;
+    color: #fff !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: 0 8px 28px rgba(79,139,255,0.22) !important;
+    transition: all 0.18s ease !important;
+  }
+
+  div[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 14px 36px rgba(79,139,255,0.36) !important;
+    filter: brightness(1.07) !important;
+  }
+
+  div[data-testid="stFormSubmitButton"] > button:active {
+    transform: translateY(0px) !important;
+  }
+
+  .lnote {
+    margin-top: 1.3rem;
+    text-align: center;
+    font-size: 0.74rem;
+    color: #2a3a4d;
+    letter-spacing: 0.03em;
+  }
   .pw-wrap {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 92vh; text-align: center; gap: 0;
@@ -380,48 +521,68 @@ st.markdown(
 # PASSWORD GATE
 # ---------------------------------------------------
 def check_password():
-    def _submit():
-        if st.session_state.get("pw_input") == st.secrets.get("APP_PASSWORD", ""):
-            st.session_state["_auth"] = True
-        else:
-            st.session_state["_auth_fail"] = True
-
     if st.session_state.get("_auth"):
         return True
 
+    def _authenticate():
+        entered_password = st.session_state.get("pw_input", "")
+        if entered_password == st.secrets.get("APP_PASSWORD", ""):
+            st.session_state["_auth"] = True
+            st.session_state["_auth_fail"] = False
+            st.rerun()
+        else:
+            st.session_state["_auth_fail"] = True
+
     st.markdown(
         """
-<div class="pw-wrap">
-    <div class="pw-badge">✦</div>
-    <div class="pw-title">Rizzume</div>
-    <div class="pw-sub">Enter your access code to continue.</div>
-</div>
-""",
+        <div class="lcard">
+          <div class="lmark">✦</div>
+          <div class="ltitle">Rizzume</div>
+          <div class="lsub">Premium resume tailoring,<br>refined and export-ready.</div>
+          <div class="lpills">
+            <span class="lpill">ATS Match</span>
+            <span class="lpill">AI Rewrites</span>
+            <span class="lpill">DOCX Export</span>
+          </div>
+          <div class="ldivider"></div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    _, center_col, _ = st.columns([1, 1.6, 1])
-    with center_col:
-        st.text_input(
-            "Password",
-            type="password",
-            key="pw_input",
-            label_visibility="collapsed",
-            placeholder="Enter password…",
-        )
-        if st.button("Enter  →", use_container_width=True, key="pw_btn"):
-            _submit()
+    with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
+        st.markdown('<span class="alabel">Login ID</span>', unsafe_allow_html=True)
+        st.text_input("Login ID", key="login_id_input", label_visibility="collapsed", placeholder="Enter any ID")
 
-        if st.session_state.get("_auth_fail"):
-            st.error("Incorrect password. Please try again.")
-            st.session_state["_auth_fail"] = False
+        st.markdown('<span class="alabel">Password</span>', unsafe_allow_html=True)
+        st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed", placeholder="••••••••••")
 
+        submitted = st.form_submit_button("Enter Workspace  ✦", use_container_width=True)
+        if submitted:
+            _authenticate()
+
+    if st.session_state.get("_auth_fail"):
+        st.error("Incorrect password. Please try again.")
+
+    st.markdown('<div class="lnote">Private workspace · Authorized access only</div>', unsafe_allow_html=True)
     return False
 
 
 if not check_password():
     st.stop()
 
+# ---------------------------------------------------
+# After auth: restore full-width layout
+# ---------------------------------------------------
+st.markdown("""
+<style>
+  .block-container {
+    max-width: 100% !important;
+    padding: 1rem 1.5rem !important;
+  }
+  header[data-testid="stHeader"] { display: block !important; background: transparent !important; }
+</style>
+""", unsafe_allow_html=True)
 # ---------------------------------------------------
 # REMAINING IMPORTS (only after auth)
 # ---------------------------------------------------
