@@ -3,6 +3,7 @@ import tempfile
 import subprocess
 import shutil
 import re
+import time
 
 import streamlit as st
 
@@ -17,7 +18,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------
-# GLOBAL CSS (fonts + base styles)
+# GLOBAL CSS
 # ---------------------------------------------------
 st.markdown(
     """
@@ -37,7 +38,6 @@ st.markdown(
     --subtle:   #5a6373;
     --accent:   #4f8bff;
     --accent2:  #7ba7ff;
-    --accentRg: 79,139,255;
     --green:    #22c55e;
     --amber:    #f59e0b;
     --red:      #ef4444;
@@ -57,319 +57,172 @@ st.markdown(
     background: var(--bg) !important;
   }
 
+  /* Make the whole app background the login background */
   .stApp {
     background:
-      radial-gradient(ellipse 60% 40% at 10% 5%, rgba(79,139,255,0.13) 0%, transparent 55%),
-      radial-gradient(ellipse 50% 35% at 90% 85%, rgba(79,139,255,0.08) 0%, transparent 55%),
-      var(--bg) !important;
+      radial-gradient(ellipse 80% 60% at 15% 5%, rgba(79,139,255,0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 88% 90%, rgba(79,139,255,0.09) 0%, transparent 55%),
+      #05080f !important;
+    min-height: 100vh;
   }
 
-  .block-container { max-width: 1360px; padding-top: 0.8rem; padding-bottom: 4rem; }
-  header[data-testid="stHeader"] { background: transparent !important; }
+  /* Strip ALL default streamlit padding/margin for login */
+  .block-container {
+    max-width: 480px !important;
+    padding-top: 0 !important;
+    padding-bottom: 2rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin: 0 auto !important;
+  }
+
+  header[data-testid="stHeader"] { display: none !important; }
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
+  footer { display: none !important; }
 
-  .pw-wrap {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 92vh; text-align: center; gap: 0;
+  /* ---- LOGIN CARD ---- */
+  .lcard {
+    margin-top: max(6vh, 2.5rem);
+    border-radius: 28px;
+    padding: 2.5rem 2rem 2rem;
+    background: linear-gradient(160deg, rgba(255,255,255,0.058), rgba(255,255,255,0.02));
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 40px 100px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    text-align: center;
   }
-  .pw-badge {
-    width: 72px; height: 72px; border-radius: 22px;
-    background: linear-gradient(135deg, rgba(79,139,255,0.22), rgba(79,139,255,0.06));
+
+  .lmark {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 1.3rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(79,139,255,0.24), rgba(79,139,255,0.07));
     border: 1px solid rgba(79,139,255,0.30);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2rem; font-weight: 900; color: #fff;
-    box-shadow: 0 0 40px rgba(79,139,255,0.18);
-    margin: 0 auto 1.2rem;
-    letter-spacing: -0.04em;
+    box-shadow: 0 8px 28px rgba(79,139,255,0.20);
+    font-size: 1.45rem;
+    color: #fff;
   }
-  .pw-title {
+
+  .ltitle {
     font-family: var(--font-head);
-    font-size: 2.6rem; font-weight: 800; letter-spacing: -0.06em;
-    color: #fff; line-height: 1; margin-bottom: 0.45rem;
-  }
-  .pw-sub {
-    font-size: 1rem; color: var(--muted); margin-bottom: 2.2rem;
-    line-height: 1.65; max-width: 340px;
-  }
-
-  .topbar {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 1rem; padding: 0.85rem 1.2rem;
-    border-radius: var(--r-lg); margin-bottom: 1.2rem;
-    background: rgba(11,17,32,0.85);
-    border: 1px solid var(--border);
-    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    position: sticky; top: 0.5rem; z-index: 100;
-  }
-  .brand { display: flex; align-items: center; gap: 0.9rem; }
-  .brand-dot {
-    width: 46px; height: 46px; border-radius: 14px;
-    background: linear-gradient(135deg, rgba(79,139,255,0.25), rgba(79,139,255,0.07));
-    border: 1px solid rgba(79,139,255,0.28);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.15rem; color: #fff; font-weight: 900;
-  }
-  .brand-name {
-    font-family: var(--font-head); font-size: 1.15rem; font-weight: 800;
-    color: #fff; letter-spacing: -0.04em; line-height: 1.05;
-  }
-  .brand-tagline { font-size: 0.8rem; color: var(--muted); margin-top: 0.08rem; }
-  .topbar-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-  .tpill {
-    padding: 0.44rem 0.76rem; border-radius: 999px;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    color: #c8d4e3; font-size: 0.76rem; font-weight: 600;
-    letter-spacing: 0.01em;
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -0.07em;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 0.5rem;
   }
 
-  .hero {
-    border-radius: var(--r-xl); padding: 2.2rem 2.2rem 2rem;
-    background: linear-gradient(145deg, rgba(255,255,255,0.048), rgba(255,255,255,0.018));
-    border: 1px solid var(--border); margin-bottom: 1.1rem;
-    box-shadow: var(--shadow); overflow: hidden; position: relative;
-  }
-  .hero::before {
-    content: ""; position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(circle at 18% 10%, rgba(79,139,255,0.15), transparent 40%);
-  }
-  .hero-grid { display: grid; grid-template-columns: 1.4fr 0.9fr; gap: 1.4rem; align-items: stretch; }
-  .eyebrow {
-    display: inline-flex; align-items: center; gap: 0.38rem;
-    padding: 0.4rem 0.72rem; border-radius: 999px;
-    background: rgba(79,139,255,0.12); border: 1px solid rgba(79,139,255,0.22);
-    color: #c4d8ff; font-size: 0.72rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.9rem;
-  }
-  .hero-title {
-    font-family: var(--font-head); font-size: clamp(2.6rem, 4.2vw, 4.4rem);
-    font-weight: 800; letter-spacing: -0.07em; line-height: 0.95;
-    color: #fff; margin: 0 0 0.9rem;
-  }
-  .hero-title .grad {
-    background: linear-gradient(90deg, #4f8bff 0%, #a8c8ff 70%);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .hero-body { font-size: 1.01rem; line-height: 1.82; color: #b8c8da; max-width: 580px; margin-bottom: 1rem; }
-  .pill-row { display: flex; flex-wrap: wrap; gap: 0.55rem; }
-  .pill {
-    padding: 0.52rem 0.85rem; border-radius: 999px;
-    background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-    color: #dce7f4; font-size: 0.82rem; font-weight: 600;
-  }
-  .stat-panel {
-    border-radius: var(--r-lg); padding: 1.3rem;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    display: flex; flex-direction: column; justify-content: space-between;
-    height: 100%;
-  }
-  .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; font-weight: 700; color: var(--muted); margin-bottom: 0.4rem; }
-  .stat-big { font-family: var(--font-head); font-size: 2.6rem; font-weight: 800; letter-spacing: -0.06em; color: #fff; line-height: 1; }
-  .stat-copy { font-size: 0.93rem; color: #9fb5cc; line-height: 1.75; margin-top: 0.5rem; }
-  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 1rem; }
-  .mini-box {
-    border-radius: 14px; padding: 0.85rem;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    transition: all 0.2s;
-  }
-  .mini-box:hover { border-color: rgba(79,139,255,0.3); transform: translateY(-2px); }
-  .mini-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; color: var(--muted); margin-bottom: 0.2rem; }
-  .mini-val { font-size: 0.96rem; color: #fff; font-weight: 700; }
-
-  .sec-card {
-    border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
-    background: linear-gradient(160deg, rgba(255,255,255,0.046), rgba(255,255,255,0.018));
-    border: 1px solid var(--border); margin-bottom: 1rem;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.2);
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .sec-card:hover { border-color: rgba(79,139,255,0.2); box-shadow: 0 16px 42px rgba(0,0,0,0.28); }
-  .step-tag {
-    display: inline-block; padding: 0.3rem 0.62rem; border-radius: 999px;
-    background: rgba(79,139,255,0.1); border: 1px solid rgba(79,139,255,0.2);
-    color: #c5daff; font-size: 0.7rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.7rem;
-  }
-  .sec-title { font-family: var(--font-head); font-size: 1.3rem; font-weight: 700; color: #fff; letter-spacing: -0.03em; margin-bottom: 0.2rem; }
-  .sec-sub { font-size: 0.94rem; color: #9aacbf; line-height: 1.72; }
-
-  div[data-testid="stFileUploader"] {
-    border: 1.5px dashed rgba(255,255,255,0.14) !important;
-    border-radius: var(--r-lg) !important;
-    padding: 0.6rem !important;
-    background: rgba(255,255,255,0.025) !important;
-  }
-  div[data-testid="stFileUploader"] section { background: transparent !important; }
-
-  div[data-testid="stTextArea"] textarea {
-    border-radius: var(--r-md) !important;
-    border: 1px solid rgba(255,255,255,0.14) !important;
-    background: #f7f9fc !important;
-    color: #0d1422 !important; -webkit-text-fill-color: #0d1422 !important;
-    padding: 1rem !important; min-height: 280px !important;
-    font-family: var(--font-body) !important; font-size: 0.96rem !important;
-    line-height: 1.72 !important; box-shadow: none !important;
-  }
-  div[data-testid="stTextArea"] textarea::placeholder { color: #7a8694 !important; opacity: 1 !important; }
-  div[data-testid="stTextArea"] textarea:focus {
-    border-color: rgba(79,139,255,0.5) !important;
-    box-shadow: 0 0 0 4px rgba(79,139,255,0.14) !important; outline: none !important;
+  .lsub {
+    font-size: 0.87rem;
+    color: #5d7290;
+    line-height: 1.6;
+    margin-bottom: 1.4rem;
   }
 
-  .stFileUploader label, .stTextArea label, label {
-    font-family: var(--font-body) !important;
-    color: #dde5f0 !important; font-weight: 600 !important; font-size: 0.95rem !important;
+  .lpills {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.6rem;
   }
 
-  .stButton > button, .stDownloadButton > button {
-    width: 100% !important; border-radius: var(--r-md) !important; min-height: 3rem !important;
-    font-family: var(--font-body) !important; font-weight: 700 !important; font-size: 0.96rem !important;
-    border: none !important;
-    background: linear-gradient(135deg, #3a74f0, #5d95ff) !important;
-    color: #fff !important; box-shadow: 0 10px 28px rgba(79,139,255,0.28);
-    transition: all 0.18s ease !important;
-  }
-  .stButton > button:hover, .stDownloadButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 14px 32px rgba(79,139,255,0.42) !important;
-    filter: brightness(1.05) !important;
+  .lpill {
+    padding: 0.28rem 0.58rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: #445566;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
   }
 
-  div[data-testid="stProgressBar"] > div {
-    background: rgba(255,255,255,0.07) !important;
-    border-radius: 999px !important; height: 10px !important;
-  }
-  div[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, #3a74f0, #6fa8ff) !important;
-    border-radius: 999px !important; transition: width 0.4s ease !important;
+  .ldivider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
+    margin-bottom: 1.5rem;
   }
 
-  .metric-shell {
-    border-radius: var(--r-lg); padding: 1.1rem 1.15rem;
-    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-    transition: all 0.22s;
-  }
-  .metric-shell:hover { border-color: rgba(79,139,255,0.24); transform: translateY(-2px); }
-  [data-testid="metric-container"] { background: transparent !important; border: none !important; padding: 0 !important; }
-  [data-testid="metric-container"] label {
-    font-family: var(--font-body) !important; color: var(--muted) !important;
-    font-weight: 700 !important; font-size: 0.7rem !important;
-    text-transform: uppercase; letter-spacing: 0.09em;
-  }
-  [data-testid="metric-container"] [data-testid="stMetricValue"] {
-    font-family: var(--font-head) !important; color: #fff !important;
-    font-size: 2.1rem !important; font-weight: 800 !important; letter-spacing: -0.04em !important;
+  .alabel {
+    display: block;
+    text-align: left;
+    font-size: 0.7rem;
+    color: #4a6080;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 0.35rem;
+    margin-top: 0.85rem;
   }
 
-  .kw-box {
-    border-radius: var(--r-lg); padding: 1.05rem 1.1rem;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    min-height: 180px;
-  }
-  .kw-title { font-weight: 700; font-size: 0.97rem; color: #e2eaf4; margin-bottom: 0.75rem; }
-  .chip-row { display: flex; flex-wrap: wrap; gap: 0.48rem; }
-  .chip-ok {
-    background: rgba(34,197,94,0.12); color: #bbf7d0;
-    border: 1px solid rgba(34,197,94,0.24); padding: 0.38rem 0.68rem;
-    border-radius: 999px; font-size: 0.82rem; font-weight: 600;
-  }
-  .chip-miss {
-    background: rgba(245,158,11,0.12); color: #fde68a;
-    border: 1px solid rgba(245,158,11,0.24); padding: 0.38rem 0.68rem;
-    border-radius: 999px; font-size: 0.82rem; font-weight: 600;
-  }
-
-  .req-item {
-    padding: 0.85rem 1rem; border-radius: var(--r-sm);
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    color: #cdd8e7; font-size: 0.94rem; line-height: 1.68; margin-bottom: 0.6rem;
-  }
-
-  .sug-card {
-    border-radius: var(--r-lg); padding: 1.1rem 1.15rem; margin-bottom: 0.9rem;
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
-    transition: border-color 0.2s;
-  }
-  .sug-card:hover { border-color: rgba(79,139,255,0.2); }
-  .line-label { font-size: 0.73rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.42rem; }
-  .reason-box {
-    background: rgba(79,139,255,0.08); border: 1px solid rgba(79,139,255,0.18);
-    border-radius: 12px; padding: 0.85rem 1rem;
-    color: #c8daff; margin: 0.75rem 0; font-size: 0.93rem; line-height: 1.65;
-  }
-
-  div[role="radiogroup"] > label {
-    background: rgba(255,255,255,0.03) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--r-md) !important;
-    padding: 0.9rem 1rem !important; margin-bottom: 0.6rem !important;
-    transition: all 0.18s ease !important;
-    min-height: 58px !important;
-  }
-  div[role="radiogroup"] > label:hover {
-    border-color: rgba(79,139,255,0.34) !important;
-    background: rgba(79,139,255,0.05) !important;
-    transform: translateY(-1px) !important;
-  }
-  div[role="radiogroup"] > label p,
-  div[role="radiogroup"] > label span,
-  div[role="radiogroup"] > label div {
-    color: #dce8f5 !important; font-family: var(--font-body) !important;
-    font-size: 0.96rem !important; line-height: 1.6 !important;
-  }
-
-  div[data-testid="stCodeBlock"] {
-    border-radius: 14px !important; overflow: hidden !important;
+  /* Input fields */
+  div[data-testid="stTextInput"] input {
+    border-radius: 14px !important;
+    min-height: 3rem !important;
+    background: rgba(255,255,255,0.038) !important;
     border: 1px solid rgba(255,255,255,0.08) !important;
-  }
-  div[data-testid="stCodeBlock"] pre, div[data-testid="stCodeBlock"] code {
-    font-family: var(--font-mono) !important;
-    white-space: pre-wrap !important; word-break: break-word !important;
-    font-size: 0.88rem !important; line-height: 1.65 !important;
-  }
-
-  .load-wrap { margin: 0.5rem 0 1.2rem; }
-  .load-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-  .load-label { font-size: 0.86rem; font-weight: 600; color: var(--muted); }
-  .load-pct { font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; color: var(--accent2); letter-spacing: -0.03em; }
-  .load-track {
-    width: 100%; height: 8px; border-radius: 999px;
-    background: rgba(255,255,255,0.07); overflow: hidden;
-  }
-  .load-fill {
-    height: 100%; border-radius: 999px;
-    background: linear-gradient(90deg, #3a74f0, #6fa8ff);
-    transition: width 0.5s cubic-bezier(.4,0,.2,1);
-    box-shadow: 0 0 12px rgba(79,139,255,0.5);
+    color: #edf3fb !important;
+    box-shadow: none !important;
+    padding-left: 1rem !important;
+    font-size: 0.94rem !important;
+    transition: border-color 0.15s, box-shadow 0.15s !important;
   }
 
-  .dl-card {
-    border-radius: var(--r-xl); padding: 1.5rem 1.6rem;
-    background: linear-gradient(145deg, rgba(79,139,255,0.08), rgba(79,139,255,0.025));
-    border: 1px solid rgba(79,139,255,0.18); margin-top: 0.8rem;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+  div[data-testid="stTextInput"] input:focus {
+    border-color: rgba(79,139,255,0.48) !important;
+    box-shadow: 0 0 0 3px rgba(79,139,255,0.1) !important;
+    background: rgba(255,255,255,0.055) !important;
   }
-  .dl-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; letter-spacing: -0.03em; }
-  .dl-sub { font-size: 0.88rem; color: var(--muted); margin-bottom: 1.1rem; }
 
-  .success-bar {
-    padding: 0.88rem 1rem; border-radius: 14px;
-    background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2);
-    color: #bbf7d0; font-size: 0.92rem; font-weight: 500; margin-bottom: 0.9rem;
+  div[data-testid="stTextInput"] input::placeholder {
+    color: #2d3d52 !important;
+    opacity: 1 !important;
   }
-  .empty-card {
-    padding: 1.3rem; border-radius: var(--r-lg); text-align: center;
-    background: rgba(255,255,255,0.025); border: 1px dashed var(--border);
-    color: var(--muted); font-size: 0.94rem; margin-top: 0.5rem;
+
+  /* Hide the default Streamlit input label */
+  div[data-testid="stTextInput"] label { display: none !important; }
+
+  /* Submit button */
+  div[data-testid="stFormSubmitButton"] > button {
+    width: 100% !important;
+    border-radius: 14px !important;
+    min-height: 3.1rem !important;
+    margin-top: 1.2rem !important;
+    font-family: var(--font-body) !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    border: none !important;
+    background: linear-gradient(135deg, #2e62d9, #5590ff) !important;
+    color: #fff !important;
+    letter-spacing: 0.01em !important;
+    box-shadow: 0 8px 28px rgba(79,139,255,0.22) !important;
+    transition: all 0.18s ease !important;
   }
-  .footer-note { text-align: center; color: var(--subtle); margin-top: 1.5rem; font-size: 0.87rem; }
 
-  div[data-baseweb="notification"] { border-radius: 16px !important; }
+  div[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 14px 36px rgba(79,139,255,0.36) !important;
+    filter: brightness(1.07) !important;
+  }
 
-  @media (max-width: 1000px) {
-    .hero-grid { grid-template-columns: 1fr; }
-    .topbar { flex-direction: column; align-items: flex-start; }
+  div[data-testid="stFormSubmitButton"] > button:active {
+    transform: translateY(0px) !important;
+  }
+
+  .lnote {
+    margin-top: 1.3rem;
+    text-align: center;
+    font-size: 0.74rem;
+    color: #2a3a4d;
+    letter-spacing: 0.03em;
   }
 </style>
 """,
@@ -380,48 +233,68 @@ st.markdown(
 # PASSWORD GATE
 # ---------------------------------------------------
 def check_password():
-    def _submit():
-        if st.session_state.get("pw_input") == st.secrets.get("APP_PASSWORD", ""):
-            st.session_state["_auth"] = True
-        else:
-            st.session_state["_auth_fail"] = True
-
     if st.session_state.get("_auth"):
         return True
 
+    def _authenticate():
+        entered_password = st.session_state.get("pw_input", "")
+        if entered_password == st.secrets.get("APP_PASSWORD", ""):
+            st.session_state["_auth"] = True
+            st.session_state["_auth_fail"] = False
+            st.rerun()
+        else:
+            st.session_state["_auth_fail"] = True
+
     st.markdown(
         """
-<div class="pw-wrap">
-    <div class="pw-badge">✦</div>
-    <div class="pw-title">Rizzume</div>
-    <div class="pw-sub">Enter your access code to continue.</div>
-</div>
-""",
+        <div class="lcard">
+          <div class="lmark">✦</div>
+          <div class="ltitle">Rizzume</div>
+          <div class="lsub">Premium resume tailoring,<br>refined and export-ready.</div>
+          <div class="lpills">
+            <span class="lpill">ATS Match</span>
+            <span class="lpill">AI Rewrites</span>
+            <span class="lpill">DOCX Export</span>
+          </div>
+          <div class="ldivider"></div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    _, center_col, _ = st.columns([1, 1.6, 1])
-    with center_col:
-        st.text_input(
-            "Password",
-            type="password",
-            key="pw_input",
-            label_visibility="collapsed",
-            placeholder="Enter password…",
-        )
-        if st.button("Enter  →", use_container_width=True, key="pw_btn"):
-            _submit()
+    with st.form("login_form", clear_on_submit=False, enter_to_submit=True):
+        st.markdown('<span class="alabel">Login ID</span>', unsafe_allow_html=True)
+        st.text_input("Login ID", key="login_id_input", label_visibility="collapsed", placeholder="Enter any ID")
 
-        if st.session_state.get("_auth_fail"):
-            st.error("Incorrect password. Please try again.")
-            st.session_state["_auth_fail"] = False
+        st.markdown('<span class="alabel">Password</span>', unsafe_allow_html=True)
+        st.text_input("Password", type="password", key="pw_input", label_visibility="collapsed", placeholder="••••••••••")
 
+        submitted = st.form_submit_button("Enter Workspace  ✦", use_container_width=True)
+        if submitted:
+            _authenticate()
+
+    if st.session_state.get("_auth_fail"):
+        st.error("Incorrect password. Please try again.")
+
+    st.markdown('<div class="lnote">Private workspace · Authorized access only</div>', unsafe_allow_html=True)
     return False
 
 
 if not check_password():
     st.stop()
 
+# ---------------------------------------------------
+# After auth: restore full-width layout
+# ---------------------------------------------------
+st.markdown("""
+<style>
+  .block-container {
+    max-width: 100% !important;
+    padding: 1rem 1.5rem !important;
+  }
+  header[data-testid="stHeader"] { display: block !important; background: transparent !important; }
+</style>
+""", unsafe_allow_html=True)
 # ---------------------------------------------------
 # REMAINING IMPORTS (only after auth)
 # ---------------------------------------------------
