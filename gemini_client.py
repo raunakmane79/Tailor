@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
