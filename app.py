@@ -1319,12 +1319,12 @@ if st.session_state.ats_analysis:
             render_loading_bar("Generating AI rewrites…", 65)
             with st.spinner(""):
                 try:
-                    target_keywords = (
-                        ats.get("high_priority_missing")
-                        or ats.get("recommended_keyword_targets")
-                        or ats.get("missing_keywords")
-                        or []
-                    )
+                    target_keywords = list(dict.fromkeys(
+                        (ats.get("high_priority_missing") or [])
+                        + (ats.get("recommended_keyword_targets") or [])
+                        + (ats.get("missing_keywords") or [])
+                        + (ats.get("medium_priority_missing") or [])
+                    ))
 
                     candidate_lines = [
                         line for line in lines
