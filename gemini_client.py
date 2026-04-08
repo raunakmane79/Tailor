@@ -238,8 +238,10 @@ class GeminiClient:
 
             char_count = int(line["char_count"])
             char_budget = self._compute_char_budget(char_count, line_char_limit)
+            section_hint = line.get("section_hint", "general")
+
             output.append(
-                f"[{line['index']}] ({char_count} chars, max {char_budget}) {line['text']}"
+                f"[{line['index']}] [section={section_hint}] ({char_count} chars, max {char_budget}) {line['text']}"
             )
         return "\n".join(output)
 
@@ -490,6 +492,14 @@ Hard rules:
 - Do not exceed the max character budget shown beside each line
 - For each line, options must be materially different from one another
 - Do not produce near-duplicate paraphrases
+- Do NOT change the candidate's name
+- Do NOT rewrite or alter project titles
+- Do NOT rewrite or alter position titles / job titles
+- If a line appears to be a project title, skip it
+- If a line appears to be a position title, skip it
+- If a line is in the Skills section, only add relevant missing skills
+- For Skills lines, preserve the original formatting, separators, and order as much as possible
+- For Skills lines, append or lightly extend skills instead of rewriting the full line
 - Use different truthful strategies where possible:
   1. ATS keyword-focused
   2. concise professional
@@ -548,13 +558,6 @@ Hard rules:
 - Return as many strong options as possible, ideally 4 to 8
 - Every option must be materially different from the others
 - Do NOT generate paraphrases that say the same thing
-- Use different truthful strategies where possible:
-  1. ATS-keyword version
-  2. concise professional version
-  3. metrics-first version
-  4. operations/process version
-  5. logistics/distribution version
-  6. collaboration/leadership version
 - Do not invent fake experience, tools, metrics, dates, roles, certifications, or achievements
 - Preserve the original meaning
 - Add keywords only if they fit truthfully and naturally
@@ -565,6 +568,20 @@ Hard rules:
 - If a keyword does not fit naturally, leave it out
 - If only 2 or 3 truthful options are possible, return only those
 - Prefer strong variety over quantity
+- Do NOT change the candidate's name
+- Do NOT rewrite or alter project titles
+- Do NOT rewrite or alter position titles / job titles
+- If this line is a project title, return no rewrite
+- If this line is a position title, return no rewrite
+- If this line is in the Skills section, only add relevant missing skills
+- For Skills lines, preserve the original formatting and only extend skill content
+- Use different truthful strategies where possible:
+  1. ATS-keyword version
+  2. concise professional version
+  3. metrics-first version
+  4. operations/process version
+  5. logistics/distribution version
+  6. collaboration/leadership version
 
 Target missing keywords:
 {json.dumps(target_keywords[:20], ensure_ascii=False)}
@@ -579,7 +596,7 @@ Already generated options to avoid repeating:
 {json.dumps(existing_options[:12], ensure_ascii=False)}
 
 Resume line:
-[{line["index"]}] ({line["char_count"]} chars, max {char_budget}) {line["text"]}
+[{line["index"]}] [section={line.get("section_hint", "general")}] ({line["char_count"]} chars, max {char_budget}) {line["text"]}
 
 Job description:
 {job_description[:5000]}
@@ -677,6 +694,7 @@ Job description:
                 "text": line["text"],
                 "char_count": line["char_count"],
                 "char_budget": self._compute_char_budget(line["char_count"], line_char_limit),
+                "section_hint": line.get("section_hint", "general"),
             }
             for line in candidate_lines
         }
@@ -695,7 +713,6 @@ Job description:
             )
 
             parsed = None
-            last_error = None
 
             for attempt in range(max_retries):
                 try:
@@ -704,8 +721,7 @@ Job description:
                     if not isinstance(parsed, list):
                         raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
                     break
-                except Exception as exc:
-                    last_error = exc
+                except Exception:
                     if attempt < max_retries - 1:
                         time.sleep(1.2)
 
