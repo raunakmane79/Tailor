@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------
-# GLOBAL CSS (fonts + base styles)
+# GLOBAL CSS
 # ---------------------------------------------------
 st.markdown(
     """
@@ -56,7 +56,6 @@ st.markdown(
     background: var(--bg) !important;
   }
 
-  /* Make the whole app background the login background */
   .stApp {
     background:
       radial-gradient(ellipse 80% 60% at 15% 5%, rgba(79,139,255,0.14) 0%, transparent 55%),
@@ -64,8 +63,7 @@ st.markdown(
       #05080f !important;
     min-height: 100vh;
   }
- 
-  /* Strip ALL default streamlit padding/margin for login */
+
   .block-container {
     max-width: 480px !important;
     padding-top: 0 !important;
@@ -74,12 +72,12 @@ st.markdown(
     padding-right: 1rem !important;
     margin: 0 auto !important;
   }
- 
+
   header[data-testid="stHeader"] { display: none !important; }
   section[data-testid="stSidebar"] { display: none !important; }
   [data-testid="collapsedControl"] { display: none !important; }
   footer { display: none !important; }
-   /* ---- LOGIN CARD ---- */
+
   .lcard {
     margin-top: max(6vh, 2.5rem);
     border-radius: 28px;
@@ -91,7 +89,7 @@ st.markdown(
       inset 0 1px 0 rgba(255,255,255,0.05);
     text-align: center;
   }
- 
+
   .lmark {
     width: 54px;
     height: 54px;
@@ -106,7 +104,7 @@ st.markdown(
     font-size: 1.45rem;
     color: #fff;
   }
- 
+
   .ltitle {
     font-family: var(--font-head);
     font-size: 2.1rem;
@@ -116,39 +114,13 @@ st.markdown(
     line-height: 1;
     margin-bottom: 0.5rem;
   }
- 
-  .lsub {
-    font-size: 0.87rem;
-    color: #5d7290;
-    line-height: 1.6;
-    margin-bottom: 1.4rem;
-  }
- 
-  .lpills {
-    display: flex;
-    justify-content: center;
-    gap: 0.4rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.6rem;
-  }
- 
-  .lpill {
-    padding: 0.28rem 0.58rem;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    color: #445566;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-  }
- 
+
   .ldivider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
     margin-bottom: 1.5rem;
   }
- 
+
   .alabel {
     display: block;
     text-align: left;
@@ -160,8 +132,7 @@ st.markdown(
     margin-bottom: 0.35rem;
     margin-top: 0.85rem;
   }
- 
-  /* Input fields */
+
   div[data-testid="stTextInput"] input {
     border-radius: 14px !important;
     min-height: 3rem !important;
@@ -171,24 +142,10 @@ st.markdown(
     box-shadow: none !important;
     padding-left: 1rem !important;
     font-size: 0.94rem !important;
-    transition: border-color 0.15s, box-shadow 0.15s !important;
   }
- 
-  div[data-testid="stTextInput"] input:focus {
-    border-color: rgba(79,139,255,0.48) !important;
-    box-shadow: 0 0 0 3px rgba(79,139,255,0.1) !important;
-    background: rgba(255,255,255,0.055) !important;
-  }
- 
-  div[data-testid="stTextInput"] input::placeholder {
-    color: #2d3d52 !important;
-    opacity: 1 !important;
-  }
- 
-  /* Hide the default Streamlit input label */
+
   div[data-testid="stTextInput"] label { display: none !important; }
- 
-  /* Submit button */
+
   div[data-testid="stFormSubmitButton"] > button {
     width: 100% !important;
     border-radius: 14px !important;
@@ -200,21 +157,9 @@ st.markdown(
     border: none !important;
     background: linear-gradient(135deg, #2e62d9, #5590ff) !important;
     color: #fff !important;
-    letter-spacing: 0.01em !important;
     box-shadow: 0 8px 28px rgba(79,139,255,0.22) !important;
-    transition: all 0.18s ease !important;
   }
- 
-  div[data-testid="stFormSubmitButton"] > button:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 14px 36px rgba(79,139,255,0.36) !important;
-    filter: brightness(1.07) !important;
-  }
- 
-  div[data-testid="stFormSubmitButton"] > button:active {
-    transform: translateY(0px) !important;
-  }
- 
+
   .lnote {
     margin-top: 1.3rem;
     text-align: center;
@@ -222,7 +167,13 @@ st.markdown(
     color: #2a3a4d;
     letter-spacing: 0.03em;
   }
-  /* ---------------- APP INPUTS ---------------- */
+
+  .block-container {
+    max-width: 100% !important;
+    padding: 1rem 1.5rem !important;
+  }
+
+  header[data-testid="stHeader"] { background: transparent !important; }
 
   div[data-testid="stTextInput"] input {
     border-radius: 14px !important;
@@ -238,17 +189,6 @@ st.markdown(
     line-height: 1.4 !important;
   }
 
-  div[data-testid="stTextInput"] input:focus {
-    border-color: rgba(79,139,255,0.45) !important;
-    box-shadow: 0 0 0 3px rgba(79,139,255,0.12) !important;
-    background: #ffffff !important;
-  }
-
-  div[data-testid="stTextInput"] input::placeholder {
-    color: #64748b !important;
-    opacity: 1 !important;
-  }
-
   div[data-testid="stTextArea"] textarea {
     border-radius: var(--r-md) !important;
     border: 1px solid rgba(255,255,255,0.14) !important;
@@ -262,17 +202,6 @@ st.markdown(
     font-size: 0.96rem !important;
     line-height: 1.72 !important;
     box-shadow: none !important;
-  }
-
-  div[data-testid="stTextArea"] textarea::placeholder {
-    color: #7a8694 !important;
-    opacity: 1 !important;
-  }
-
-  div[data-testid="stTextArea"] textarea:focus {
-    border-color: rgba(79,139,255,0.5) !important;
-    box-shadow: 0 0 0 4px rgba(79,139,255,0.14) !important;
-    outline: none !important;
   }
 
   .stFileUploader label,
@@ -291,10 +220,6 @@ st.markdown(
     background: rgba(255,255,255,0.025) !important;
   }
 
-  div[data-testid="stFileUploader"] section {
-    background: transparent !important;
-  }
-
   .stButton > button,
   .stDownloadButton > button {
     width: 100% !important;
@@ -307,26 +232,6 @@ st.markdown(
     background: linear-gradient(135deg, #3a74f0, #5d95ff) !important;
     color: #fff !important;
     box-shadow: 0 10px 28px rgba(79,139,255,0.28);
-    transition: all 0.18s ease !important;
-  }
-
-  .stButton > button:hover,
-  .stDownloadButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 14px 32px rgba(79,139,255,0.42) !important;
-    filter: brightness(1.05) !important;
-  }
-
-  div[data-testid="stProgressBar"] > div {
-    background: rgba(255,255,255,0.07) !important;
-    border-radius: 999px !important;
-    height: 10px !important;
-  }
-
-  div[data-testid="stProgressBar"] > div > div {
-    background: linear-gradient(90deg, #3a74f0, #6fa8ff) !important;
-    border-radius: 999px !important;
-    transition: width 0.4s ease !important;
   }
 
   .topbar {
@@ -340,7 +245,6 @@ st.markdown(
     background: rgba(11,17,32,0.85);
     border: 1px solid var(--border);
     backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     position: sticky;
     top: 0.5rem;
@@ -396,7 +300,6 @@ st.markdown(
     color: #c8d4e3;
     font-size: 0.76rem;
     font-weight: 600;
-    letter-spacing: 0.01em;
   }
 
   .hero {
@@ -408,14 +311,6 @@ st.markdown(
     box-shadow: var(--shadow);
     overflow: hidden;
     position: relative;
-  }
-
-  .hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(circle at 18% 10%, rgba(79,139,255,0.15), transparent 40%);
   }
 
   .hero-grid {
@@ -529,12 +424,6 @@ st.markdown(
     padding: 0.85rem;
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--border);
-    transition: all 0.2s;
-  }
-
-  .mini-box:hover {
-    border-color: rgba(79,139,255,0.3);
-    transform: translateY(-2px);
   }
 
   .mini-label {
@@ -559,12 +448,6 @@ st.markdown(
     border: 1px solid var(--border);
     margin-bottom: 1rem;
     box-shadow: 0 12px 35px rgba(0,0,0,0.2);
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .sec-card:hover {
-    border-color: rgba(79,139,255,0.2);
-    box-shadow: 0 16px 42px rgba(0,0,0,0.28);
   }
 
   .step-tag {
@@ -601,12 +484,6 @@ st.markdown(
     padding: 1.1rem 1.15rem;
     background: rgba(255,255,255,0.04);
     border: 1px solid var(--border);
-    transition: all 0.22s;
-  }
-
-  .metric-shell:hover {
-    border-color: rgba(79,139,255,0.24);
-    transform: translateY(-2px);
   }
 
   [data-testid="metric-container"] {
@@ -690,11 +567,6 @@ st.markdown(
     margin-bottom: 0.9rem;
     background: rgba(255,255,255,0.03);
     border: 1px solid var(--border);
-    transition: border-color 0.2s;
-  }
-
-  .sug-card:hover {
-    border-color: rgba(79,139,255,0.2);
   }
 
   .line-label {
@@ -723,23 +595,7 @@ st.markdown(
     border-radius: var(--r-md) !important;
     padding: 0.9rem 1rem !important;
     margin-bottom: 0.6rem !important;
-    transition: all 0.18s ease !important;
     min-height: 58px !important;
-  }
-
-  div[role="radiogroup"] > label:hover {
-    border-color: rgba(79,139,255,0.34) !important;
-    background: rgba(79,139,255,0.05) !important;
-    transform: translateY(-1px) !important;
-  }
-
-  div[role="radiogroup"] > label p,
-  div[role="radiogroup"] > label span,
-  div[role="radiogroup"] > label div {
-    color: #dce8f5 !important;
-    font-family: var(--font-body) !important;
-    font-size: 0.96rem !important;
-    line-height: 1.6 !important;
   }
 
   div[data-testid="stCodeBlock"] {
@@ -860,6 +716,7 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
 # ---------------------------------------------------
 # PASSWORD GATE
 # ---------------------------------------------------
@@ -882,7 +739,6 @@ def check_password():
           <div class="lmark">✦</div>
           <div class="ltitle">Rizzume</div>
           <div class="lsub"></div>
-    
           <div class="ldivider"></div>
         </div>
         """,
@@ -911,19 +767,26 @@ if not check_password():
     st.stop()
 
 # ---------------------------------------------------
-# After auth: restore full-width layout
+# AFTER AUTH
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
   .block-container {
     max-width: 100% !important;
     padding: 1rem 1.5rem !important;
   }
-  header[data-testid="stHeader"] { display: block !important; background: transparent !important; }
+  header[data-testid="stHeader"] {
+    display: block !important;
+    background: transparent !important;
+  }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 # ---------------------------------------------------
-# REMAINING IMPORTS (only after auth)
+# REMAINING IMPORTS
 # ---------------------------------------------------
 from resume_processor import ResumeProcessor
 from gemini_client import GeminiClient
@@ -999,6 +862,7 @@ def convert_docx_to_pdf_bytes(docx_bytes):
     with tempfile.TemporaryDirectory() as tmpdir:
         input_docx = os.path.join(tmpdir, "resume.docx")
         output_pdf = os.path.join(tmpdir, "resume.pdf")
+
         with open(input_docx, "wb") as f:
             f.write(docx_bytes)
 
@@ -1015,6 +879,80 @@ def convert_docx_to_pdf_bytes(docx_bytes):
 
         with open(output_pdf, "rb") as f:
             return f.read()
+
+
+def is_heading_like(text: str) -> bool:
+    t = (text or "").strip()
+    if not t:
+        return True
+
+    t_low = t.lower().strip(":").strip()
+    heading_words = {
+        "education",
+        "experience",
+        "work experience",
+        "projects",
+        "skills",
+        "technical skills",
+        "leadership",
+        "activities",
+        "summary",
+        "profile",
+        "certifications",
+        "awards",
+        "contact",
+        "professional experience",
+    }
+
+    if t_low in heading_words:
+        return True
+
+    if len(t) <= 4:
+        return True
+
+    if len(t.split()) <= 5 and t.upper() == t:
+        return True
+
+    return False
+
+
+def is_position_or_title_like(text: str) -> bool:
+    t = (text or "").strip()
+    if not t:
+        return False
+
+    lower = t.lower()
+    protected_title_words = [
+        "intern",
+        "analyst",
+        "engineer",
+        "assistant",
+        "associate",
+        "manager",
+        "specialist",
+        "consultant",
+        "coordinator",
+        "researcher",
+        "director",
+        "lead",
+        "president",
+    ]
+
+    if any(word in lower for word in protected_title_words) and len(t.split()) <= 8:
+        return True
+
+    return False
+
+
+def is_project_title_like(text: str) -> bool:
+    t = (text or "").strip()
+    if not t:
+        return False
+
+    if len(t.split()) <= 8 and len(t) <= 80:
+        return True
+
+    return False
 
 
 SOFFICE_AVAILABLE = shutil.which("soffice") is not None
@@ -1312,111 +1250,83 @@ if st.session_state.ats_analysis:
         f"Longer bullets can use up to {st.session_state.line_char_limit * 2} chars."
     )
 
-def is_heading_like(text: str) -> bool:
-    t = (text or "").strip()
-    if not t:
-        return True
+    gen_c1, _ = st.columns([1, 4], gap="large")
+    with gen_c1:
+        if st.button("Generate Suggestions", use_container_width=True):
+            lines = st.session_state.resume_processor.get_all_lines(include_empty=False)
+            render_loading_bar("Generating AI rewrites…", 65)
 
-    t_low = t.lower().strip(":").strip()
-    heading_words = {
-        "education",
-        "experience",
-        "work experience",
-        "projects",
-        "skills",
-        "technical skills",
-        "leadership",
-        "activities",
-        "summary",
-        "profile",
-        "certifications",
-        "awards",
-        "contact",
-        "professional experience",
-    }
+            with st.spinner(""):
+                try:
+                    target_keywords = (
+                        ats.get("high_priority_missing")
+                        or ats.get("recommended_keyword_targets")
+                        or ats.get("missing_keywords")
+                        or []
+                    )
 
-    if t_low in heading_words:
-        return True
+                    candidate_lines = []
+                    in_skills_section = False
 
-    if len(t) <= 4:
-        return True
+                    for line in lines:
+                        text = line.get("text", "").strip()
+                        if not text:
+                            continue
 
-    if len(t.split()) <= 5 and t.upper() == t:
-        return True
+                        lower = text.lower().strip(":").strip()
 
-    return False
+                        if lower in {"skills", "technical skills"}:
+                            in_skills_section = True
+                            continue
 
+                        if lower in {
+                            "education",
+                            "experience",
+                            "work experience",
+                            "projects",
+                            "leadership",
+                            "activities",
+                        }:
+                            in_skills_section = False
 
-gen_c1, _ = st.columns([1, 4], gap="large")
-with gen_c1:
-    if st.button("Generate Suggestions", use_container_width=True):
-        lines = st.session_state.resume_processor.get_all_lines(include_empty=False)
-        render_loading_bar("Generating AI rewrites…", 65)
+                        if is_heading_like(text):
+                            continue
 
-        with st.spinner(""):
-            try:
-                target_keywords = (
-                    ats.get("high_priority_missing")
-                    or ats.get("recommended_keyword_targets")
-                    or ats.get("missing_keywords")
-                    or []
-                )
+                        if len(text) < 8:
+                            continue
 
-                candidate_lines = []
-in_skills_section = False
+                        if is_position_or_title_like(text):
+                            continue
 
-for line in lines:
-    text = line.get("text", "").strip()
-    if not text:
-        continue
+                        if is_project_title_like(text) and not in_skills_section:
+                            continue
 
-    lower = text.lower().strip(":").strip()
+                        line["section_hint"] = "skills" if in_skills_section else "general"
+                        candidate_lines.append(line)
 
-    if lower in {"skills", "technical skills"}:
-        in_skills_section = True
-        continue
+                    sugs = client.generate_suggestions(
+                        lines=candidate_lines,
+                        job_description=job_description,
+                        ats_analysis=ats,
+                        selected_keywords=target_keywords,
+                        line_char_limit=st.session_state.line_char_limit,
+                    )
 
-    if lower in {"education", "experience", "work experience", "projects", "leadership", "activities"}:
-        in_skills_section = False
+                    st.session_state.suggestions = sugs
+                    st.session_state.choices_made = {}
+                    st.session_state.tailored_docx_bytes = None
+                    st.session_state.pdf_bytes = None
+                    st.session_state.ready_for_manual_edit = False
 
-    if is_heading_like(text):
-        continue
+                    render_loading_bar("Suggestions ready", 75)
 
-    if len(text) < 8:
-        continue
+                    if sugs:
+                        st.success(f"Generated {len(sugs)} suggestion(s).")
+                    else:
+                        st.warning("No suggestions returned.")
 
-    if is_position_or_title_like(text):
-        continue
-
-    if is_project_title_like(text) and not in_skills_section:
-        continue
-
-    line["section_hint"] = "skills" if in_skills_section else "general"
-    candidate_lines.append(line)
-
-                sugs = client.generate_suggestions(
-                    lines=candidate_lines,
-                    job_description=job_description,
-                    ats_analysis=ats,
-                    selected_keywords=target_keywords,
-                    line_char_limit=st.session_state.line_char_limit,
-                )
-
-                st.session_state.suggestions = sugs
-                st.session_state.choices_made = {}
-                st.session_state.tailored_docx_bytes = None
-                st.session_state.pdf_bytes = None
-                st.session_state.ready_for_manual_edit = False
-
-                render_loading_bar("Suggestions ready", 75)
-
-                if sugs:
-                    st.success(f"Generated {len(sugs)} suggestion(s).")
-                else:
-                    st.warning("No suggestions returned.")
-
-            except Exception as e:
-                st.error(f"Generation failed: {e}")
+                except Exception as e:
+                    st.error(f"Generation failed: {e}")
 
 # ---------------------------------------------------
 # STEP 3 — SUGGESTIONS
@@ -1653,10 +1563,8 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
     st.markdown(
         """
 <div class="dl-card">
-  <div class="dl-title">Export Your Tailored Resume</div>
-  <div class="dl-sub">
-    Your selected suggestions and manual edits are now included. Download the updated DOCX below.
-  </div>
+  <div class="dl-title">Export your tailored resume</div>
+  <div class="dl-sub">Download DOCX, optionally generate PDF, or upload into Google Docs.</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -1666,8 +1574,7 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
 
     with d1:
         st.markdown(
-            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;'
-            'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Word Document</div>',
+            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">DOCX</div>',
             unsafe_allow_html=True,
         )
         st.download_button(
@@ -1677,28 +1584,21 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True,
         )
-        st.markdown(
-            '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">'
-            'Selected suggestions + manual edits included.</div>',
-            unsafe_allow_html=True,
-        )
 
     with d2:
         st.markdown(
-            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;'
-            'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">PDF Export</div>',
+            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">PDF</div>',
             unsafe_allow_html=True,
         )
+
         if SOFFICE_AVAILABLE:
-            if st.button("⚙ Generate PDF", use_container_width=True):
-                render_loading_bar("Converting to PDF…", 85)
-                with st.spinner(""):
-                    try:
-                        st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx)
-                        render_loading_bar("PDF ready!", 100)
-                        st.success("PDF ready to download.")
-                    except Exception as e:
-                        st.error(f"PDF conversion failed: {e}")
+            if st.button("Generate PDF", use_container_width=True):
+                try:
+                    st.session_state.pdf_bytes = convert_docx_to_pdf_bytes(current_docx)
+                    render_loading_bar("PDF ready", 100)
+                    st.success("PDF ready to download.")
+                except Exception as e:
+                    st.error(f"PDF conversion failed: {e}")
 
             if st.session_state.pdf_bytes:
                 st.download_button(
@@ -1710,21 +1610,18 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
                 )
             else:
                 st.markdown(
-                    '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">'
-                    'Click Generate PDF first.</div>',
+                    '<div style="font-size:0.78rem;color:#5a6880;margin-top:0.4rem;line-height:1.5;">Click Generate PDF first.</div>',
                     unsafe_allow_html=True,
                 )
         else:
             st.markdown(
-                '<div style="font-size:0.84rem;color:#5a6880;padding:0.6rem 0;line-height:1.6;">'
-                'PDF export unavailable — LibreOffice not installed on this deployment.</div>',
+                '<div style="font-size:0.84rem;color:#5a6880;padding:0.6rem 0;line-height:1.6;">PDF export unavailable — LibreOffice not installed on this deployment.</div>',
                 unsafe_allow_html=True,
             )
 
     with d3:
         st.markdown(
-            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;'
-            'text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Google Docs</div>',
+            '<div style="font-size:0.8rem;font-weight:700;color:#8a9eb8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.5rem;">Google Docs</div>',
             unsafe_allow_html=True,
         )
 
