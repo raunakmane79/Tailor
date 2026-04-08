@@ -372,14 +372,14 @@ JOB DESCRIPTION:
         key_requirements: List[str],
     ) -> str:
         return f"""
-Target missing keywords:
-{json.dumps(target_keywords[:15], ensure_ascii=False)}
+Target missing keywords (place as many as possible naturally):
+{json.dumps(target_keywords[:25], ensure_ascii=False)}
 
 Fallback missing keywords:
-{json.dumps(fallback_missing_keywords[:15], ensure_ascii=False)}
+{json.dumps(fallback_missing_keywords[:25], ensure_ascii=False)}
 
 Key requirements:
-{json.dumps(key_requirements[:10], ensure_ascii=False)}
+{json.dumps(key_requirements[:15], ensure_ascii=False)}
 """.strip()
 
     def _build_suggestion_prompt(
@@ -423,28 +423,27 @@ Hard rules:
 - Output MUST be complete valid JSON
 - Do not stop mid-array
 - Escape all quotes properly
-- Select only lines that actually need improvement
-- Return 4 to 8 items max
+- Select every line where a keyword can be naturally added or clarity improved
+- Return 8 to 20 items — cover as many lines as possible to maximize keyword placement
 - options must contain exactly 3 strings
 - Do not invent fake experience, metrics, tools, dates, roles, achievements, certifications, or technologies
 - Preserve the original meaning unless a small wording improvement is needed
 - Keywords must be naturally integrated into the sentence
 - Do NOT keyword stuff
-- Do NOT force keywords where they sound unnatural
+- Do NOT force keywords where they sound completely unnatural
 - Only add keywords if they genuinely fit the user's existing experience
 - Keep the same line_index and do not change the order or position of any line
 - Rewrite only the content of that specific line
 - Each option should sound natural and human
 - Maintain the same tone and style as the original resume
-- If a keyword cannot fit naturally, leave it out
+- If a keyword cannot fit naturally in a line, skip that keyword for that line only
 - line_index must exactly match one of the provided indices
 - original must exactly match the provided line text for that line_index
 - Do not merge lines
 - Do not split lines
-- Prefer concise output over many items
-- Prioritize the target missing keywords when adding ATS language
-- If no target keyword fits a line naturally, do not rewrite that line
-- keywords_added must only include keywords actually present in the rewrite
+- GOAL: place every target keyword at least once across all suggestions combined
+- Prioritize lines that have the most room for keyword insertion
+- If a line already contains multiple keywords, still include it if adding one more is natural
 - Each line has a maximum allowed character budget
 - If the original line fits within one visual line, keep the rewrite within one-line budget
 - If the original line exceeds one visual line, you may use up to two-line budget
@@ -471,7 +470,7 @@ Job description:
         if not isinstance(lines, list) or not lines:
             raise ValueError("No resume lines were provided.")
 
-        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:10]
+        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:25]
 
         prompt = self._build_suggestion_prompt(
             lines=lines,
@@ -498,7 +497,7 @@ Job description:
 
         for attempt in range(max_retries):
             try:
-                raw = self._call(prompt, temperature=0.3, max_output_tokens=3200)
+                raw = self._call(prompt, temperature=0.3, max_output_tokens=6000)
                 parsed = self._extract_json(raw)
 
                 if not isinstance(parsed, list):
@@ -529,7 +528,7 @@ Job description:
                     if ATSUtils.normalize_compare_text(original) != ATSUtils.normalize_compare_text(actual_original):
                         continue
 
-                    if not isinstance(options, list) or len(options) < 2:
+                    if not isinstance(options, list) or len(options) < 1:
                         continue
 
                     if not all(isinstance(opt, str) and opt.strip() for opt in options):
@@ -549,16 +548,16 @@ Job description:
                         if ATSUtils.normalize_compare_text(opt_clean) == ATSUtils.normalize_compare_text(actual_original):
                             continue
 
-                        if len(opt_clean) > char_budget:
+                        if len(opt_clean) > char_budget * 1.10:
                             continue
 
-                        min_reasonable_len = max(20, int(original_len * 0.50))
+                        min_reasonable_len = max(15, int(original_len * 0.30))
                         if len(opt_clean) < min_reasonable_len:
                             continue
 
                         valid_options.append(opt_clean)
 
-                    if len(valid_options) < 2:
+                    if len(valid_options) < 1:
                         continue
 
                     valid_options = valid_options[:3]
