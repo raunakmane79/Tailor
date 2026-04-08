@@ -1363,15 +1363,36 @@ with gen_c1:
                 )
 
                 candidate_lines = []
-                for line in lines:
-                    text = line.get("text", "").strip()
-                    if not text:
-                        continue
-                    if is_heading_like(text):
-                        continue
-                    if len(text) < 8:
-                        continue
-                    candidate_lines.append(line)
+in_skills_section = False
+
+for line in lines:
+    text = line.get("text", "").strip()
+    if not text:
+        continue
+
+    lower = text.lower().strip(":").strip()
+
+    if lower in {"skills", "technical skills"}:
+        in_skills_section = True
+        continue
+
+    if lower in {"education", "experience", "work experience", "projects", "leadership", "activities"}:
+        in_skills_section = False
+
+    if is_heading_like(text):
+        continue
+
+    if len(text) < 8:
+        continue
+
+    if is_position_or_title_like(text):
+        continue
+
+    if is_project_title_like(text) and not in_skills_section:
+        continue
+
+    line["section_hint"] = "skills" if in_skills_section else "general"
+    candidate_lines.append(line)
 
                 sugs = client.generate_suggestions(
                     lines=candidate_lines,
