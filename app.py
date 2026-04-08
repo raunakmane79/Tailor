@@ -1312,68 +1312,90 @@ if st.session_state.ats_analysis:
         f"Longer bullets can use up to {st.session_state.line_char_limit * 2} chars."
     )
 
-    gen_c1, _ = st.columns([1, 4], gap="large")
-    with gen_c1:
-        if st.button("Generate Suggestions", use_container_width=True):
-            lines = st.session_state.resume_processor.get_all_lines(include_empty=False)
-            render_loading_bar("Generating AI rewrites…", 65)
-            with st.spinner(""):
-                try:
-                    target_keywords = (
-                        ats.get("high_priority_missing")
-                        or ats.get("recommended_keyword_targets")
-                        or ats.get("missing_keywords")
-                        or []
-                    )
-
-                   def is_heading_like(text: str) -> bool:
+def is_heading_like(text: str) -> bool:
     t = (text or "").strip()
     if not t:
         return True
+
     t_low = t.lower().strip(":").strip()
     heading_words = {
-        "education", "experience", "work experience", "projects", "skills",
-        "technical skills", "leadership", "activities", "summary", "profile",
-        "certifications", "awards", "contact", "professional experience"
+        "education",
+        "experience",
+        "work experience",
+        "projects",
+        "skills",
+        "technical skills",
+        "leadership",
+        "activities",
+        "summary",
+        "profile",
+        "certifications",
+        "awards",
+        "contact",
+        "professional experience",
     }
+
     if t_low in heading_words:
         return True
+
     if len(t) <= 4:
         return True
+
     if len(t.split()) <= 5 and t.upper() == t:
         return True
+
     return False
 
-candidate_lines = []
-for line in lines:
-    text = line.get("text", "").strip()
-    if not text:
-        continue
-    if is_heading_like(text):
-        continue
-    if len(text) < 8:
-        continue
-    candidate_lines.append(line)
-                    sugs = client.generate_suggestions(
-                        lines=candidate_lines,
-                        job_description=job_description,
-                        ats_analysis=ats,
-                        selected_keywords=target_keywords,
-                        line_char_limit=st.session_state.line_char_limit,
-                    )
-                    st.session_state.suggestions = sugs
-                    st.session_state.choices_made = {}
-                    st.session_state.tailored_docx_bytes = None
-                    st.session_state.pdf_bytes = None
-                    st.session_state.ready_for_manual_edit = False
-                    render_loading_bar("Suggestions ready", 75)
 
-                    if sugs:
-                        st.success(f"Generated {len(sugs)} suggestion(s).")
-                    else:
-                        st.warning("No suggestions returned.")
-                except Exception as e:
-                    st.error(f"Generation failed: {e}")
+gen_c1, _ = st.columns([1, 4], gap="large")
+with gen_c1:
+    if st.button("Generate Suggestions", use_container_width=True):
+        lines = st.session_state.resume_processor.get_all_lines(include_empty=False)
+        render_loading_bar("Generating AI rewrites…", 65)
+
+        with st.spinner(""):
+            try:
+                target_keywords = (
+                    ats.get("high_priority_missing")
+                    or ats.get("recommended_keyword_targets")
+                    or ats.get("missing_keywords")
+                    or []
+                )
+
+                candidate_lines = []
+                for line in lines:
+                    text = line.get("text", "").strip()
+                    if not text:
+                        continue
+                    if is_heading_like(text):
+                        continue
+                    if len(text) < 8:
+                        continue
+                    candidate_lines.append(line)
+
+                sugs = client.generate_suggestions(
+                    lines=candidate_lines,
+                    job_description=job_description,
+                    ats_analysis=ats,
+                    selected_keywords=target_keywords,
+                    line_char_limit=st.session_state.line_char_limit,
+                )
+
+                st.session_state.suggestions = sugs
+                st.session_state.choices_made = {}
+                st.session_state.tailored_docx_bytes = None
+                st.session_state.pdf_bytes = None
+                st.session_state.ready_for_manual_edit = False
+
+                render_loading_bar("Suggestions ready", 75)
+
+                if sugs:
+                    st.success(f"Generated {len(sugs)} suggestion(s).")
+                else:
+                    st.warning("No suggestions returned.")
+
+            except Exception as e:
+                st.error(f"Generation failed: {e}")
 
 # ---------------------------------------------------
 # STEP 3 — SUGGESTIONS
