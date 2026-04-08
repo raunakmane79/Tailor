@@ -8,7 +8,6 @@ import requests
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
-
 class ATSUtils:
     @staticmethod
     def normalize_token(text: str) -> str:
@@ -476,10 +475,17 @@ Hard rules:
 - Do NOT keyword stuff
 - Do NOT force keywords where they sound unnatural
 - Only add keywords if they genuinely fit the user's existing experience
+- Do NOT add niche company-specific, plant-specific, or industry-specific systems, standards, certifications, audits, or compliance frameworks unless they are clearly supported by the original resume line
+- Examples of forbidden unsupported additions include things like SQF, HACCP, GMP, FDA compliance, ISO certifications, SAP modules, Oracle systems, warehouse systems, ERP tools, or regulated process terminology when not already evidenced
+- If a business term is highly domain-specific and unlikely from the original line, leave it out
 - Keep the same line_index and do not change the order or position of any line
 - Rewrite only the content of that specific line
 - Each option should sound natural and human
 - Maintain the same tone and style as the original resume
+- The sentence must read smoothly and logically, not like disconnected keywords were inserted
+- Every rewrite must flow naturally from start to finish
+- Do not produce awkward phrasing just to match keywords
+- If a keyword makes the sentence sound forced, unnatural, or illogical, do not use it
 - If a keyword cannot fit naturally, leave it out
 - line_index must exactly match one of the provided indices
 - original must exactly match the provided line text for that line_index
@@ -559,6 +565,8 @@ Hard rules:
 - Every option must be materially different from the others
 - Do NOT generate paraphrases that say the same thing
 - Do not invent fake experience, tools, metrics, dates, roles, certifications, or achievements
+- Do NOT add niche company-specific, plant-specific, or industry-specific systems, standards, certifications, audits, or compliance frameworks unless they are clearly supported by the original line
+- Examples of forbidden unsupported additions include things like SQF, HACCP, GMP, FDA compliance, ISO certifications, SAP modules, Oracle systems, warehouse systems, ERP tools, or regulated process terminology when not already evidenced
 - Preserve the original meaning
 - Add keywords only if they fit truthfully and naturally
 - Do not keyword stuff
@@ -568,6 +576,9 @@ Hard rules:
 - If a keyword does not fit naturally, leave it out
 - If only 2 or 3 truthful options are possible, return only those
 - Prefer strong variety over quantity
+- The sentence must read smoothly and logically
+- Make sure each rewrite has natural flow and sounds like a real resume bullet, not a keyword list
+- If a keyword makes the sentence awkward, forced, or unnatural, do not use it
 - Do NOT change the candidate's name
 - Do NOT rewrite or alter project titles
 - Do NOT rewrite or alter position titles / job titles
@@ -628,6 +639,12 @@ Job description:
 
             min_reasonable_len = max(20, int(original_len * 0.45))
             if len(opt_clean) < min_reasonable_len:
+                continue
+
+            awkward_patterns = [
+                " ,", " .", "  ", "and and", "with with", "using using"
+            ]
+            if any(p in opt_clean.lower() for p in awkward_patterns):
                 continue
 
             too_similar = False
