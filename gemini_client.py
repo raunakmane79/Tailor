@@ -1,11 +1,12 @@
 import json
 import re
 import time
+from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional
 
 import requests
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
 
 class ATSUtils:
@@ -279,6 +280,47 @@ class GeminiClient:
         keyword_tokens = set(keyword_n.split())
         return len(line_tokens.intersection(keyword_tokens)) > 0
 
+    def _similarity_ratio(self, a: str, b: str) -> float:
+        return SequenceMatcher(
+            None,
+            ATSUtils.normalize_compare_text(a),
+            ATSUtils.normalize_compare_text(b),
+        ).ratio()
+
+    def _is_heading_like(self, text: str) -> bool:
+        t = (text or "").strip()
+        if not t:
+            return True
+
+        t_low = t.lower().strip(":").strip()
+        heading_words = {
+            "education",
+            "experience",
+            "work experience",
+            "projects",
+            "skills",
+            "technical skills",
+            "leadership",
+            "activities",
+            "summary",
+            "profile",
+            "certifications",
+            "awards",
+            "contact",
+            "professional experience",
+        }
+
+        if t_low in heading_words:
+            return True
+
+        if len(t) <= 4:
+            return True
+
+        if len(t.split()) <= 5 and t.upper() == t:
+            return True
+
+        return False
+
     def analyze_ats(self, resume_text: str, job_description: str) -> Dict[str, Any]:
         prompt = f"""
 You are an ATS analyst.
@@ -413,7 +455,7 @@ Required output schema:
   {{
     "line_index": 12,
     "original": "original line text",
-    "options": ["option 1", "option 2", "option 3"],
+    "options": ["option 1", "option 2", "option 3", "option 4"],
     "reason": "short reason",
     "keywords_added": ["keyword1", "keyword2"]
   }}
@@ -421,11 +463,11 @@ Required output schema:
 
 Hard rules:
 - Output MUST be complete valid JSON
-- Do not stop mid-array
-- Escape all quotes properly
 - Select only lines that actually need improvement
-- Return 4 to 8 items max
-- options must contain exactly 3 strings
+- Return as many useful line suggestions as possible
+- Prefer covering more strong candidate lines
+- Each line may contain 2 to 8 options
+- Do NOT force a fixed number of options if the line does not support them truthfully
 - Do not invent fake experience, metrics, tools, dates, roles, achievements, certifications, or technologies
 - Preserve the original meaning unless a small wording improvement is needed
 - Keywords must be naturally integrated into the sentence
@@ -441,14 +483,21 @@ Hard rules:
 - original must exactly match the provided line text for that line_index
 - Do not merge lines
 - Do not split lines
-- Prefer concise output over many items
 - Prioritize the target missing keywords when adding ATS language
 - If no target keyword fits a line naturally, do not rewrite that line
-- keywords_added must only include keywords actually present in the rewrite
+- keywords_added must only include keywords actually present in the rewrites
 - Each line has a maximum allowed character budget
-- If the original line fits within one visual line, keep the rewrite within one-line budget
-- If the original line exceeds one visual line, you may use up to two-line budget
 - Do not exceed the max character budget shown beside each line
+- For each line, options must be materially different from one another
+- Do not produce near-duplicate paraphrases
+- Use different truthful strategies where possible:
+  1. ATS keyword-focused
+  2. concise professional
+  3. metrics-first
+  4. operations/process
+  5. logistics/distribution
+  6. collaboration/communication
+- Prefer variety and usefulness over repetitive paraphrasing
 
 {keyword_block}
 
@@ -458,6 +507,138 @@ Resume lines:
 Job description:
 {job_description[:5000]}
 """.strip()
+
+    def _build_single_line_prompt(
+        self,
+        line: Dict[str, Any],
+        job_description: str,
+        ats_analysis: Dict[str, Any],
+        target_keywords: List[str],
+        line_char_limit: int,
+        existing_options: Optional[List[str]] = None,
+    ) -> str:
+        existing_options = existing_options or []
+        char_budget = self._compute_char_budget(line["char_count"], line_char_limit)
+        missing_keywords = ats_analysis.get("missing_keywords", [])
+        key_requirements = ats_analysis.get("key_requirements", [])
+
+        return f"""
+You are a resume tailoring engine.
+
+Return ONLY valid JSON.
+No markdown.
+No comments.
+No intro text.
+
+Required output schema:
+{{
+  "line_index": {line["index"]},
+  "original": {json.dumps(line["text"], ensure_ascii=False)},
+  "options": [
+    "rewrite 1",
+    "rewrite 2",
+    "rewrite 3"
+  ],
+  "reason": "short reason",
+  "keywords_added": ["keyword1", "keyword2"]
+}}
+
+Hard rules:
+- Rewrite ONLY this one resume line
+- Return as many strong options as possible, ideally 4 to 8
+- Every option must be materially different from the others
+- Do NOT generate paraphrases that say the same thing
+- Use different truthful strategies where possible:
+  1. ATS-keyword version
+  2. concise professional version
+  3. metrics-first version
+  4. operations/process version
+  5. logistics/distribution version
+  6. collaboration/leadership version
+- Do not invent fake experience, tools, metrics, dates, roles, certifications, or achievements
+- Preserve the original meaning
+- Add keywords only if they fit truthfully and naturally
+- Do not keyword stuff
+- Keep each option within {char_budget} characters
+- Do not repeat the original line
+- keywords_added must only include keywords actually present in at least one returned option
+- If a keyword does not fit naturally, leave it out
+- If only 2 or 3 truthful options are possible, return only those
+- Prefer strong variety over quantity
+
+Target missing keywords:
+{json.dumps(target_keywords[:20], ensure_ascii=False)}
+
+Fallback missing keywords:
+{json.dumps(missing_keywords[:20], ensure_ascii=False)}
+
+Key requirements:
+{json.dumps(key_requirements[:12], ensure_ascii=False)}
+
+Already generated options to avoid repeating:
+{json.dumps(existing_options[:12], ensure_ascii=False)}
+
+Resume line:
+[{line["index"]}] ({line["char_count"]} chars, max {char_budget}) {line["text"]}
+
+Job description:
+{job_description[:5000]}
+""".strip()
+
+    def _clean_options_for_line(
+        self,
+        actual_original: str,
+        options: List[str],
+        char_budget: int,
+        target_keywords: List[str],
+        original_len: int,
+    ) -> List[str]:
+        valid_options: List[str] = []
+
+        for opt in options:
+            if not isinstance(opt, str):
+                continue
+
+            opt_clean = opt.strip()
+            if not opt_clean:
+                continue
+
+            if ATSUtils.normalize_compare_text(opt_clean) == ATSUtils.normalize_compare_text(actual_original):
+                continue
+
+            if len(opt_clean) > char_budget:
+                continue
+
+            min_reasonable_len = max(20, int(original_len * 0.45))
+            if len(opt_clean) < min_reasonable_len:
+                continue
+
+            too_similar = False
+            for existing in valid_options:
+                if self._similarity_ratio(opt_clean, existing) >= 0.88:
+                    too_similar = True
+                    break
+            if too_similar:
+                continue
+
+            valid_options.append(opt_clean)
+
+        scored = []
+        for opt in valid_options:
+            hits = ATSUtils.find_keyword_hits(opt, target_keywords)
+            score = (len(hits), -abs(len(opt) - original_len))
+            scored.append((score, opt))
+
+        scored.sort(reverse=True)
+        ranked = [opt for _, opt in scored]
+
+        final_ranked: List[str] = []
+        for opt in ranked:
+            if any(self._similarity_ratio(opt, kept) >= 0.86 for kept in final_ranked):
+                continue
+            final_ranked.append(opt)
+
+        return final_ranked[:8]
 
     def generate_suggestions(
         self,
@@ -471,15 +652,25 @@ Job description:
         if not isinstance(lines, list) or not lines:
             raise ValueError("No resume lines were provided.")
 
-        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:10]
+        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:15]
 
-        prompt = self._build_suggestion_prompt(
-            lines=lines,
-            job_description=job_description,
-            ats_analysis=ats_analysis,
-            target_keywords=target_keywords,
-            line_char_limit=line_char_limit,
-        )
+        candidate_lines: List[Dict[str, Any]] = []
+        for line in lines:
+            if not isinstance(line, dict):
+                continue
+            text = (line.get("text") or "").strip()
+            if not text:
+                continue
+            if self._is_heading_like(text):
+                continue
+            if len(text) < 8:
+                continue
+            if "index" not in line or "char_count" not in line:
+                continue
+            candidate_lines.append(line)
+
+        if not candidate_lines:
+            raise ValueError("No valid resume lines available for suggestion generation.")
 
         line_map = {
             line["index"]: {
@@ -487,129 +678,239 @@ Job description:
                 "char_count": line["char_count"],
                 "char_budget": self._compute_char_budget(line["char_count"], line_char_limit),
             }
-            for line in lines
-            if isinstance(line, dict)
-            and "index" in line
-            and "text" in line
-            and "char_count" in line
+            for line in candidate_lines
         }
 
-        last_error = None
+        all_cleaned: List[Dict[str, Any]] = []
 
-        for attempt in range(max_retries):
-            try:
-                raw = self._call(prompt, temperature=0.3, max_output_tokens=3200)
-                parsed = self._extract_json(raw)
+        batched_lines = [candidate_lines[i:i + 8] for i in range(0, len(candidate_lines), 8)]
 
-                if not isinstance(parsed, list):
-                    raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
+        for batch in batched_lines:
+            prompt = self._build_suggestion_prompt(
+                lines=batch,
+                job_description=job_description,
+                ats_analysis=ats_analysis,
+                target_keywords=target_keywords,
+                line_char_limit=line_char_limit,
+            )
 
-                cleaned: List[Dict[str, Any]] = []
+            parsed = None
+            last_error = None
 
-                for item in parsed:
-                    if not isinstance(item, dict):
+            for attempt in range(max_retries):
+                try:
+                    raw = self._call(prompt, temperature=0.45, max_output_tokens=4200)
+                    parsed = self._extract_json(raw)
+                    if not isinstance(parsed, list):
+                        raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    if attempt < max_retries - 1:
+                        time.sleep(1.2)
+
+            if parsed is None:
+                continue
+
+            for item in parsed:
+                if not isinstance(item, dict):
+                    continue
+
+                line_index = item.get("line_index")
+                original = item.get("original")
+                options = item.get("options")
+                reason = item.get("reason", "")
+                keywords_added = item.get("keywords_added", [])
+
+                if not isinstance(line_index, int) or line_index not in line_map:
+                    continue
+
+                if not isinstance(original, str):
+                    continue
+
+                if not isinstance(options, list) or len(options) < 2:
+                    continue
+
+                actual_original = line_map[line_index]["text"]
+                original_len = len(actual_original)
+                char_budget = line_map[line_index]["char_budget"]
+
+                if ATSUtils.normalize_compare_text(original) != ATSUtils.normalize_compare_text(actual_original):
+                    continue
+
+                cleaned_options = self._clean_options_for_line(
+                    actual_original=actual_original,
+                    options=options,
+                    char_budget=char_budget,
+                    target_keywords=target_keywords,
+                    original_len=original_len,
+                )
+
+                if len(cleaned_options) < 2:
+                    continue
+
+                if not isinstance(reason, str):
+                    reason = ""
+
+                if not isinstance(keywords_added, list):
+                    keywords_added = []
+
+                keywords_added = [
+                    kw.strip()
+                    for kw in keywords_added
+                    if isinstance(kw, str) and kw.strip()
+                ]
+                keywords_added = self._dedupe_keep_order(keywords_added)
+
+                option_keyword_hits: List[str] = []
+                for opt in cleaned_options:
+                    option_keyword_hits.extend(ATSUtils.find_keyword_hits(opt, target_keywords))
+                option_keyword_hits = self._dedupe_keep_order(option_keyword_hits)
+
+                if not keywords_added:
+                    keywords_added = option_keyword_hits
+
+                all_cleaned.append(
+                    {
+                        "line_index": line_index,
+                        "original": actual_original,
+                        "options": cleaned_options,
+                        "reason": reason.strip(),
+                        "keywords_added": keywords_added,
+                        "char_budget": char_budget,
+                    }
+                )
+
+        merged_by_line: Dict[int, Dict[str, Any]] = {}
+        for item in all_cleaned:
+            li = item["line_index"]
+            if li not in merged_by_line:
+                merged_by_line[li] = item
+                continue
+
+            existing = merged_by_line[li]
+            combined_options = existing["options"] + item["options"]
+
+            deduped_options: List[str] = []
+            for opt in combined_options:
+                if any(self._similarity_ratio(opt, kept) >= 0.86 for kept in deduped_options):
+                    continue
+                deduped_options.append(opt)
+
+            existing["options"] = deduped_options[:8]
+
+            merged_keywords = existing.get("keywords_added", []) + item.get("keywords_added", [])
+            existing["keywords_added"] = self._dedupe_keep_order(merged_keywords)
+
+            if len(item.get("reason", "")) > len(existing.get("reason", "")):
+                existing["reason"] = item["reason"]
+
+        retry_candidates = []
+        for line in candidate_lines:
+            li = line["index"]
+            current = merged_by_line.get(li)
+            if current is None or len(current.get("options", [])) < 4:
+                retry_candidates.append(line)
+
+        for line in retry_candidates[:12]:
+            existing_options = merged_by_line.get(line["index"], {}).get("options", [])
+
+            prompt = self._build_single_line_prompt(
+                line=line,
+                job_description=job_description,
+                ats_analysis=ats_analysis,
+                target_keywords=target_keywords,
+                line_char_limit=line_char_limit,
+                existing_options=existing_options,
+            )
+
+            parsed = None
+            for attempt in range(2):
+                try:
+                    raw = self._call(prompt, temperature=0.55, max_output_tokens=1800)
+                    parsed = self._extract_json(raw)
+                    if not isinstance(parsed, dict):
+                        raise ValueError("Expected single-line retry JSON object.")
+                    break
+                except Exception:
+                    if attempt < 1:
+                        time.sleep(1.0)
+
+            if not parsed:
+                continue
+
+            if parsed.get("line_index") != line["index"]:
+                continue
+
+            actual_original = line["text"]
+            if ATSUtils.normalize_compare_text(parsed.get("original", "")) != ATSUtils.normalize_compare_text(actual_original):
+                continue
+
+            new_options = parsed.get("options", [])
+            if not isinstance(new_options, list):
+                continue
+
+            char_budget = self._compute_char_budget(line["char_count"], line_char_limit)
+            cleaned_retry_options = self._clean_options_for_line(
+                actual_original=actual_original,
+                options=new_options,
+                char_budget=char_budget,
+                target_keywords=target_keywords,
+                original_len=len(actual_original),
+            )
+
+            if len(cleaned_retry_options) < 2:
+                continue
+
+            reason = parsed.get("reason", "")
+            if not isinstance(reason, str):
+                reason = ""
+
+            keywords_added = parsed.get("keywords_added", [])
+            if not isinstance(keywords_added, list):
+                keywords_added = []
+            keywords_added = self._dedupe_keep_order(
+                [kw.strip() for kw in keywords_added if isinstance(kw, str) and kw.strip()]
+            )
+
+            if line["index"] not in merged_by_line:
+                merged_by_line[line["index"]] = {
+                    "line_index": line["index"],
+                    "original": actual_original,
+                    "options": cleaned_retry_options[:8],
+                    "reason": reason.strip(),
+                    "keywords_added": keywords_added,
+                    "char_budget": char_budget,
+                }
+            else:
+                existing = merged_by_line[line["index"]]
+                combined = existing["options"] + cleaned_retry_options
+                deduped: List[str] = []
+                for opt in combined:
+                    if any(self._similarity_ratio(opt, kept) >= 0.86 for kept in deduped):
                         continue
+                    deduped.append(opt)
+                existing["options"] = deduped[:8]
+                existing["keywords_added"] = self._dedupe_keep_order(
+                    existing.get("keywords_added", []) + keywords_added
+                )
+                if len(reason.strip()) > len(existing.get("reason", "")):
+                    existing["reason"] = reason.strip()
 
-                    line_index = item.get("line_index")
-                    original = item.get("original")
-                    options = item.get("options")
-                    reason = item.get("reason", "")
-                    keywords_added = item.get("keywords_added", [])
+        final_results = list(merged_by_line.values())
 
-                    if not isinstance(line_index, int) or line_index not in line_map:
-                        continue
+        def line_score(item: Dict[str, Any]):
+            kw_score = len(item.get("keywords_added", []))
+            opt_score = len(item.get("options", []))
+            return (-kw_score, -opt_score, item["line_index"])
 
-                    if not isinstance(original, str):
-                        continue
+        final_results = [x for x in final_results if len(x.get("options", [])) >= 2]
+        final_results.sort(key=line_score)
 
-                    actual_original = line_map[line_index]["text"]
-                    original_len = len(actual_original)
-                    char_budget = line_map[line_index]["char_budget"]
+        if not final_results:
+            raise ValueError("Model returned responses, but no valid suggestions survived validation.")
 
-                    if ATSUtils.normalize_compare_text(original) != ATSUtils.normalize_compare_text(actual_original):
-                        continue
-
-                    if not isinstance(options, list) or len(options) < 2:
-                        continue
-
-                    if not all(isinstance(opt, str) and opt.strip() for opt in options):
-                        continue
-
-                    valid_options = []
-                    seen = set()
-
-                    for opt in options:
-                        opt_clean = opt.strip()
-                        opt_norm = ATSUtils.normalize_token(opt_clean)
-
-                        if not opt_norm or opt_norm in seen:
-                            continue
-                        seen.add(opt_norm)
-
-                        if ATSUtils.normalize_compare_text(opt_clean) == ATSUtils.normalize_compare_text(actual_original):
-                            continue
-
-                        if len(opt_clean) > char_budget:
-                            continue
-
-                        min_reasonable_len = max(20, int(original_len * 0.50))
-                        if len(opt_clean) < min_reasonable_len:
-                            continue
-
-                        valid_options.append(opt_clean)
-
-                    if len(valid_options) < 2:
-                        continue
-
-                    valid_options = valid_options[:3]
-                    while len(valid_options) < 3:
-                        valid_options.append(valid_options[-1])
-
-                    if not isinstance(reason, str):
-                        reason = ""
-
-                    if not isinstance(keywords_added, list):
-                        keywords_added = []
-
-                    keywords_added = [
-                        kw.strip()
-                        for kw in keywords_added
-                        if isinstance(kw, str) and kw.strip()
-                    ]
-                    keywords_added = self._dedupe_keep_order(keywords_added)
-
-                    option_keyword_hits = []
-                    for opt in valid_options:
-                        option_keyword_hits.extend(ATSUtils.find_keyword_hits(opt, target_keywords))
-
-                    option_keyword_hits = self._dedupe_keep_order(option_keyword_hits)
-
-                    if not keywords_added:
-                        keywords_added = option_keyword_hits
-
-                    cleaned.append(
-                        {
-                            "line_index": line_index,
-                            "original": actual_original,
-                            "options": valid_options,
-                            "reason": reason.strip(),
-                            "keywords_added": keywords_added,
-                            "char_budget": char_budget,
-                        }
-                    )
-
-                if cleaned:
-                    cleaned = sorted(cleaned, key=lambda x: x["line_index"])
-                    return cleaned
-
-                raise ValueError("Model returned JSON, but no valid suggestions survived validation.")
-
-            except Exception as exc:
-                last_error = exc
-                if attempt < max_retries - 1:
-                    time.sleep(1.2)
-
-        raise ValueError(f"Suggestion generation failed after {max_retries} attempts: {last_error}")
+        return final_results
 
 
 def extract_lines_with_counts(resume_text: str) -> List[Dict[str, Any]]:
