@@ -1326,11 +1326,34 @@ if st.session_state.ats_analysis:
                         or []
                     )
 
-                    candidate_lines = [
-                        line for line in lines
-                        if line.get("text", "").strip() and len(line.get("text", "").strip()) >= 20
-                    ]
+                   def is_heading_like(text: str) -> bool:
+    t = (text or "").strip()
+    if not t:
+        return True
+    t_low = t.lower().strip(":").strip()
+    heading_words = {
+        "education", "experience", "work experience", "projects", "skills",
+        "technical skills", "leadership", "activities", "summary", "profile",
+        "certifications", "awards", "contact", "professional experience"
+    }
+    if t_low in heading_words:
+        return True
+    if len(t) <= 4:
+        return True
+    if len(t.split()) <= 5 and t.upper() == t:
+        return True
+    return False
 
+candidate_lines = []
+for line in lines:
+    text = line.get("text", "").strip()
+    if not text:
+        continue
+    if is_heading_like(text):
+        continue
+    if len(text) < 8:
+        continue
+    candidate_lines.append(line)
                     sugs = client.generate_suggestions(
                         lines=candidate_lines,
                         job_description=job_description,
