@@ -8,6 +8,7 @@ import requests
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
+
 class ATSUtils:
     @staticmethod
     def normalize_token(text: str) -> str:
@@ -225,9 +226,9 @@ class GeminiClient:
             raise ValueError(f"JSON parse failed: {exc}\n\nRaw response:\n{cleaned}") from exc
 
     def _compute_char_budget(self, original_len: int, line_char_limit: int) -> int:
-        if original_len <= line_char_limit:
-            return line_char_limit
-        return line_char_limit * 2
+        if original_len <= 95:
+            return 95
+        return 190
 
     def _build_lines_block(self, lines: List[Dict[str, Any]], line_char_limit: int) -> str:
         output = []
@@ -476,6 +477,9 @@ Hard rules:
 - Do NOT force keywords where they sound unnatural
 - Only add keywords if they genuinely fit the user's existing experience
 - Do NOT add niche company-specific, plant-specific, or industry-specific systems, standards, certifications, audits, or compliance frameworks unless they are clearly supported by the original resume line
+- Do NOT add material-specific, product-specific, or directly process-input keywords unless they are clearly supported by the original resume line
+- Examples of forbidden unsupported additions include things like copper, aluminum grades, resins, chemicals, food ingredients, packaging materials, steel types, or exact production materials if they are only mentioned in the job description and not already evidenced in the resume
+- If the job description mentions a specific material, component, ingredient, or manufactured item, do NOT force it into the resume unless the original line already clearly supports it
 - Examples of forbidden unsupported additions include things like SQF, HACCP, GMP, FDA compliance, ISO certifications, SAP modules, Oracle systems, warehouse systems, ERP tools, or regulated process terminology when not already evidenced
 - If a business term is highly domain-specific and unlikely from the original line, leave it out
 - Keep the same line_index and do not change the order or position of any line
@@ -492,9 +496,11 @@ Hard rules:
 - Do not merge lines
 - Do not split lines
 - Prioritize the target missing keywords when adding ATS language
+- Prefer broader transferable keywords over narrow material-specific or product-specific keywords
 - If no target keyword fits a line naturally, do not rewrite that line
 - keywords_added must only include keywords actually present in the rewrites
-- Each line has a maximum allowed character budget
+- Character rule: if original line length is 95 or less, max rewrite length is 95 characters
+- Character rule: if original line length is more than 95, max rewrite length is 190 characters
 - Do not exceed the max character budget shown beside each line
 - For each line, options must be materially different from one another
 - Do not produce near-duplicate paraphrases
@@ -566,6 +572,9 @@ Hard rules:
 - Do NOT generate paraphrases that say the same thing
 - Do not invent fake experience, tools, metrics, dates, roles, certifications, or achievements
 - Do NOT add niche company-specific, plant-specific, or industry-specific systems, standards, certifications, audits, or compliance frameworks unless they are clearly supported by the original line
+- Do NOT add material-specific, product-specific, or directly process-input keywords unless they are clearly supported by the original line
+- Examples of forbidden unsupported additions include things like copper, aluminum grades, resins, chemicals, food ingredients, packaging materials, steel types, or exact production materials if they are only mentioned in the job description and not already evidenced in the resume
+- If the job description mentions a specific material, component, ingredient, or manufactured item, do NOT force it into the resume unless the original line already clearly supports it
 - Examples of forbidden unsupported additions include things like SQF, HACCP, GMP, FDA compliance, ISO certifications, SAP modules, Oracle systems, warehouse systems, ERP tools, or regulated process terminology when not already evidenced
 - Preserve the original meaning
 - Add keywords only if they fit truthfully and naturally
@@ -586,6 +595,8 @@ Hard rules:
 - If this line is a position title, return no rewrite
 - If this line is in the Skills section, only add relevant missing skills
 - For Skills lines, preserve the original formatting and only extend skill content
+- Character rule: if original line length is 95 or less, max rewrite length is 95 characters
+- Character rule: if original line length is more than 95, max rewrite length is 190 characters
 - Use different truthful strategies where possible:
   1. ATS-keyword version
   2. concise professional version
@@ -645,6 +656,22 @@ Job description:
                 " ,", " .", "  ", "and and", "with with", "using using"
             ]
             if any(p in opt_clean.lower() for p in awkward_patterns):
+                continue
+
+            forbidden_material_terms = [
+                "copper", "aluminum", "aluminium", "steel", "resin", "chemical",
+                "chemicals", "ingredient", "ingredients", "sqf", "haccp", "gmp"
+            ]
+            original_norm = ATSUtils.normalize_token(actual_original)
+            opt_norm = ATSUtils.normalize_token(opt_clean)
+
+            forced_narrow_term = False
+            for term in forbidden_material_terms:
+                if term in opt_norm and term not in original_norm:
+                    forced_narrow_term = True
+                    break
+
+            if forced_narrow_term:
                 continue
 
             too_similar = False
