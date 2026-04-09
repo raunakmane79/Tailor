@@ -227,8 +227,8 @@ class GeminiClient:
 
     def _compute_char_budget(self, original_len: int, line_char_limit: int) -> int:
         if original_len <= 95:
-            return 95
-        return 190
+            return 90
+        return 180
 
     def _build_lines_block(self, lines: List[Dict[str, Any]], line_char_limit: int) -> str:
         output = []
@@ -499,8 +499,8 @@ Hard rules:
 - Prefer broader transferable keywords over narrow material-specific or product-specific keywords
 - If no target keyword fits a line naturally, do not rewrite that line
 - keywords_added must only include keywords actually present in the rewrites
-- Character rule: if original line length is 95 or less, max rewrite length is 95 characters
-- Character rule: if original line length is more than 95, max rewrite length is 190 characters
+- Character rule: if original line length is 90 characters or less, max rewrite length is 90 characters
+- Character rule: if original line length is more than 90, max rewrite length is 180 characters
 - Do not exceed the max character budget shown beside each line
 - For each line, options must be materially different from one another
 - Do not produce near-duplicate paraphrases
@@ -595,8 +595,8 @@ Hard rules:
 - If this line is a position title, return no rewrite
 - If this line is in the Skills section, only add relevant missing skills
 - For Skills lines, preserve the original formatting and only extend skill content
-- Character rule: if original line length is 95 or less, max rewrite length is 95 characters
-- Character rule: if original line length is more than 95, max rewrite length is 190 characters
+- Character rule: if original line length is 90 or less, max rewrite length is 90 characters
+- Character rule: if original line length is more than 90, max rewrite length is 180 characters
 - Use different truthful strategies where possible:
   1. ATS-keyword version
   2. concise professional version
