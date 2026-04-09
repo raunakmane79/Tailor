@@ -499,7 +499,7 @@ Hard rules:
 - Prefer broader transferable keywords over narrow material-specific or product-specific keywords
 - If no target keyword fits a line naturally, do not rewrite that line
 - keywords_added must only include keywords actually present in the rewrites
-- Character rule: if original line length is 90 characters or less, max rewrite length is 90 characters
+- Character rule: if original line length is 90 characters or less, max rewrite length is 80 characters
 - Character rule: if original line length is more than 90, max rewrite length is 180 characters
 - Do not exceed the max character budget shown beside each line
 - For each line, options must be materially different from one another
@@ -595,7 +595,7 @@ Hard rules:
 - If this line is a position title, return no rewrite
 - If this line is in the Skills section, only add relevant missing skills
 - For Skills lines, preserve the original formatting and only extend skill content
-- Character rule: if original line length is 90 or less, max rewrite length is 90 characters
+- Character rule: if original line length is 90 or less, max rewrite length is 80 characters
 - Character rule: if original line length is more than 90, max rewrite length is 180 characters
 - Use different truthful strategies where possible:
   1. ATS-keyword version
