@@ -9,13 +9,18 @@ import requests
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
 
+STRICT_SINGLE_LINE_THRESHOLD = 100
+STRICT_SINGLE_LINE_MAX = 90
+STRICT_DOUBLE_LINE_MAX = 180
+
+
 class ATSUtils:
     @staticmethod
     def normalize_token(text: str) -> str:
         if not isinstance(text, str):
             return ""
         text = text.lower().strip()
-        text = re.sub(r"[^a-z0-9\-\+\#/\.& ]+", " ", text)
+        text = re.sub(r"[^a-z0-9\-\+#/\.& ]+", " ", text)
         text = re.sub(r"\s+", " ", text).strip()
         return text
 
@@ -54,7 +59,6 @@ class ATSUtils:
 
             kw_clean = kw.strip()
             kw_n = ATSUtils.normalize_token(kw_clean)
-
             if not kw_n:
                 continue
 
@@ -64,7 +68,6 @@ class ATSUtils:
 
             text_tokens = set(text_n.split())
             kw_tokens = set(kw_n.split())
-
             if kw_tokens and text_tokens.intersection(kw_tokens):
                 hits.append(kw_clean)
 
@@ -101,7 +104,6 @@ class GeminiClient:
             raise RuntimeError(f"Gemini API Error: {response.status_code} - {response.text}")
 
         data = response.json()
-
         try:
             return data["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as exc:
@@ -126,18 +128,14 @@ class GeminiClient:
             if escape:
                 escape = False
                 continue
-
             if ch == "\\":
                 escape = True
                 continue
-
             if ch == '"':
                 in_string = not in_string
                 continue
-
             if in_string:
                 continue
-
             if ch == "{":
                 stack.append("}")
             elif ch == "[":
@@ -178,15 +176,12 @@ class GeminiClient:
             if escape:
                 escape = False
                 continue
-
             if ch == "\\":
                 escape = True
                 continue
-
             if ch == '"':
                 in_string = not in_string
                 continue
-
             if in_string:
                 continue
 
@@ -195,7 +190,7 @@ class GeminiClient:
             elif ch == closer:
                 depth -= 1
                 if depth == 0:
-                    return text[start:i + 1]
+                    return text[start : i + 1]
 
         return text[start:]
 
@@ -225,10 +220,10 @@ class GeminiClient:
         except Exception as exc:
             raise ValueError(f"JSON parse failed: {exc}\n\nRaw response:\n{cleaned}") from exc
 
-    def _compute_char_budget(self, original_len: int, line_char_limit: int) -> int:
-        if original_len <= 95:
-            return 90
-        return 180
+    def _compute_char_budget(self, original_len: int, line_char_limit: int = STRICT_SINGLE_LINE_MAX) -> int:
+        if original_len <= STRICT_SINGLE_LINE_THRESHOLD:
+            return STRICT_SINGLE_LINE_MAX
+        return STRICT_DOUBLE_LINE_MAX
 
     def _build_lines_block(self, lines: List[Dict[str, Any]], line_char_limit: int) -> str:
         output = []
@@ -236,7 +231,7 @@ class GeminiClient:
             if not isinstance(line, dict) or not line.get("text", "").strip():
                 continue
 
-            char_count = int(line["char_count"])
+            char_count = int(line.get("char_count", len(line.get("text", ""))))
             char_budget = self._compute_char_budget(char_count, line_char_limit)
             section_hint = line.get("section_hint", "general")
 
@@ -274,7 +269,6 @@ class GeminiClient:
 
         if not line_text_n or not keyword_n:
             return False
-
         if keyword_n in line_text_n:
             return True
 
@@ -314,13 +308,10 @@ class GeminiClient:
 
         if t_low in heading_words:
             return True
-
         if len(t) <= 4:
             return True
-
         if len(t.split()) <= 5 and t.upper() == t:
             return True
-
         return False
 
     def analyze_ats(self, resume_text: str, job_description: str) -> Dict[str, Any]:
@@ -478,9 +469,7 @@ Hard rules:
 - Only add keywords if they genuinely fit the user's existing experience
 - Do NOT add niche company-specific, plant-specific, or industry-specific systems, standards, certifications, audits, or compliance frameworks unless they are clearly supported by the original resume line
 - Do NOT add material-specific, product-specific, or directly process-input keywords unless they are clearly supported by the original resume line
-- Examples of forbidden unsupported additions include things like copper, aluminum grades, resins, chemicals, food ingredients, packaging materials, steel types, or exact production materials if they are only mentioned in the job description and not already evidenced in the resume
 - If the job description mentions a specific material, component, ingredient, or manufactured item, do NOT force it into the resume unless the original line already clearly supports it
-- Examples of forbidden unsupported additions include things like SQF, HACCP, GMP, FDA compliance, ISO certifications, SAP modules, Oracle systems, warehouse systems, ERP tools, or regulated process terminology when not already evidenced
 - If a business term is highly domain-specific and unlikely from the original line, leave it out
 - Keep the same line_index and do not change the order or position of any line
 - Rewrite only the content of that specific line
@@ -499,8 +488,9 @@ Hard rules:
 - Prefer broader transferable keywords over narrow material-specific or product-specific keywords
 - If no target keyword fits a line naturally, do not rewrite that line
 - keywords_added must only include keywords actually present in the rewrites
-- Character rule: if original line length is 90 characters or less, max rewrite length is 80 characters
-- Character rule: if original line length is more than 90, max rewrite length is 180 characters
+- Character rule: if original line length is 100 characters or less, max rewrite length is 90 characters
+- Character rule: if original line length is more than 100 characters, max rewrite length is 180 characters
+- One original line must be replaced by exactly one rewritten line
 - Do not exceed the max character budget shown beside each line
 - For each line, options must be materially different from one another
 - Do not produce near-duplicate paraphrases
@@ -544,6 +534,8 @@ Job description:
         missing_keywords = ats_analysis.get("missing_keywords", [])
         key_requirements = ats_analysis.get("key_requirements", [])
 
+        existing_options_block = json.dumps(existing_options[:8], ensure_ascii=False)
+
         return f"""
 You are a resume tailoring engine.
 
@@ -554,8 +546,8 @@ No intro text.
 
 Required output schema:
 {{
-  "line_index": {line["index"]},
-  "original": {json.dumps(line["text"], ensure_ascii=False)},
+  "line_index": {line['index']},
+  "original": {json.dumps(line['text'], ensure_ascii=False)},
   "options": [
     "rewrite 1",
     "rewrite 2",
@@ -573,133 +565,151 @@ Hard rules:
 - Do not invent fake experience, tools, metrics, dates, roles, certifications, or achievements
 - Do NOT add niche company-specific, plant-specific, or industry-specific systems, standards, certifications, audits, or compliance frameworks unless they are clearly supported by the original line
 - Do NOT add material-specific, product-specific, or directly process-input keywords unless they are clearly supported by the original line
-- Examples of forbidden unsupported additions include things like copper, aluminum grades, resins, chemicals, food ingredients, packaging materials, steel types, or exact production materials if they are only mentioned in the job description and not already evidenced in the resume
 - If the job description mentions a specific material, component, ingredient, or manufactured item, do NOT force it into the resume unless the original line already clearly supports it
-- Examples of forbidden unsupported additions include things like SQF, HACCP, GMP, FDA compliance, ISO certifications, SAP modules, Oracle systems, warehouse systems, ERP tools, or regulated process terminology when not already evidenced
-- Preserve the original meaning
-- Add keywords only if they fit truthfully and naturally
-- Do not keyword stuff
-- Keep each option within {char_budget} characters
-- Do not repeat the original line
-- keywords_added must only include keywords actually present in at least one returned option
+- Preserve original meaning and tone
+- Sound natural and human
+- Avoid keyword stuffing
 - If a keyword does not fit naturally, leave it out
-- If only 2 or 3 truthful options are possible, return only those
-- Prefer strong variety over quantity
-- The sentence must read smoothly and logically
-- Make sure each rewrite has natural flow and sounds like a real resume bullet, not a keyword list
-- If a keyword makes the sentence awkward, forced, or unnatural, do not use it
-- Do NOT change the candidate's name
-- Do NOT rewrite or alter project titles
-- Do NOT rewrite or alter position titles / job titles
-- If this line is a project title, return no rewrite
-- If this line is a position title, return no rewrite
-- If this line is in the Skills section, only add relevant missing skills
-- For Skills lines, preserve the original formatting and only extend skill content
-- Character rule: if original line length is 90 or less, max rewrite length is 80 characters
-- Character rule: if original line length is more than 90, max rewrite length is 180 characters
-- Use different truthful strategies where possible:
-  1. ATS-keyword version
-  2. concise professional version
-  3. metrics-first version
-  4. operations/process version
-  5. logistics/distribution version
-  6. collaboration/leadership version
+- Do not merge lines
+- Do not split lines
+- One original line must be replaced by one rewritten line only
+- Character rule: if original line length is 100 characters or less, max rewrite length is 90 characters
+- Character rule: if original line length is more than 100 characters, max rewrite length is 180 characters
+- Do not exceed max {char_budget} characters for any option
+- Keep the same job title / project title / name if present; do not rewrite those titles
+- keywords_added must only include keywords actually used in the returned options
+- If existing options are provided, avoid near-duplicates of them
 
-Target missing keywords:
-{json.dumps(target_keywords[:20], ensure_ascii=False)}
+Target keywords:
+{json.dumps(target_keywords[:15], ensure_ascii=False)}
 
 Fallback missing keywords:
-{json.dumps(missing_keywords[:20], ensure_ascii=False)}
+{json.dumps(missing_keywords[:15], ensure_ascii=False)}
 
 Key requirements:
-{json.dumps(key_requirements[:12], ensure_ascii=False)}
+{json.dumps(key_requirements[:10], ensure_ascii=False)}
 
-Already generated options to avoid repeating:
-{json.dumps(existing_options[:12], ensure_ascii=False)}
+Existing options to avoid duplicating:
+{existing_options_block}
 
 Resume line:
-[{line["index"]}] [section={line.get("section_hint", "general")}] ({line["char_count"]} chars, max {char_budget}) {line["text"]}
+[{line['index']}] ({line['char_count']} chars, max {char_budget}) {line['text']}
 
 Job description:
 {job_description[:5000]}
 """.strip()
 
-    def _clean_options_for_line(
+    def _normalize_suggestion_item(
         self,
-        actual_original: str,
-        options: List[str],
-        char_budget: int,
-        target_keywords: List[str],
-        original_len: int,
-    ) -> List[str]:
+        item: Dict[str, Any],
+        line_lookup: Dict[int, Dict[str, Any]],
+        line_char_limit: int,
+    ) -> Optional[Dict[str, Any]]:
+        if not isinstance(item, dict):
+            return None
+
+        line_index = item.get("line_index")
+        if not isinstance(line_index, int):
+            try:
+                line_index = int(line_index)
+            except Exception:
+                return None
+
+        if line_index not in line_lookup:
+            return None
+
+        line = line_lookup[line_index]
+        original = item.get("original", "")
+        if not isinstance(original, str) or not original.strip():
+            original = line["text"]
+
+        if self._similarity_ratio(original, line["text"]) < 0.9:
+            original = line["text"]
+
+        raw_options = item.get("options", [])
+        if not isinstance(raw_options, list):
+            raw_options = []
+
+        budget = self._compute_char_budget(line["char_count"], line_char_limit)
         valid_options: List[str] = []
 
-        for opt in options:
+        for opt in raw_options:
             if not isinstance(opt, str):
                 continue
+            cleaned = re.sub(r"\s+", " ", opt).strip()
+            if not cleaned:
+                continue
+            if len(cleaned) > budget:
+                continue
+            if ATSUtils.normalize_compare_text(cleaned) == ATSUtils.normalize_compare_text(line["text"]):
+                continue
+            if self._is_heading_like(cleaned):
+                continue
+            if any(self._similarity_ratio(cleaned, existing) > 0.96 for existing in valid_options):
+                continue
+            valid_options.append(cleaned)
 
-            opt_clean = opt.strip()
-            if not opt_clean:
+        if len(valid_options) < 2:
+            return None
+
+        reason = item.get("reason", "")
+        if not isinstance(reason, str):
+            reason = ""
+
+        keywords_added = item.get("keywords_added", [])
+        if not isinstance(keywords_added, list):
+            keywords_added = []
+        keywords_added = self._dedupe_keep_order(
+            [kw for kw in keywords_added if isinstance(kw, str) and kw.strip()]
+        )
+
+        actual_hits = ATSUtils.find_keyword_hits(" ".join(valid_options), keywords_added)
+
+        return {
+            "line_index": line_index,
+            "original": line["text"],
+            "options": valid_options,
+            "reason": reason.strip(),
+            "keywords_added": actual_hits,
+            "char_budget": budget,
+        }
+
+    def _repair_suggestions_if_needed(
+        self,
+        suggestions: List[Dict[str, Any]],
+        lines: List[Dict[str, Any]],
+        job_description: str,
+        ats_analysis: Dict[str, Any],
+        target_keywords: List[str],
+        line_char_limit: int,
+    ) -> List[Dict[str, Any]]:
+        line_lookup = {int(line["index"]): line for line in lines if isinstance(line.get("index"), int)}
+        repaired = suggestions[:]
+        covered_indices = {item["line_index"] for item in repaired}
+
+        for line in lines:
+            idx = line["index"]
+            if idx in covered_indices:
+                continue
+            prompt = self._build_single_line_prompt(
+                line=line,
+                job_description=job_description,
+                ats_analysis=ats_analysis,
+                target_keywords=target_keywords,
+                line_char_limit=line_char_limit,
+                existing_options=[],
+            )
+            try:
+                raw = self._call(prompt, temperature=0.45, max_output_tokens=1400)
+                parsed = self._extract_json(raw)
+                repaired_item = self._normalize_suggestion_item(parsed, line_lookup, line_char_limit)
+                if repaired_item is not None:
+                    repaired.append(repaired_item)
+            except Exception:
                 continue
 
-            if ATSUtils.normalize_compare_text(opt_clean) == ATSUtils.normalize_compare_text(actual_original):
-                continue
-
-            if len(opt_clean) > char_budget:
-                continue
-
-            min_reasonable_len = max(20, int(original_len * 0.45))
-            if len(opt_clean) < min_reasonable_len:
-                continue
-
-            awkward_patterns = [
-                " ,", " .", "  ", "and and", "with with", "using using"
-            ]
-            if any(p in opt_clean.lower() for p in awkward_patterns):
-                continue
-
-            forbidden_material_terms = [
-                "copper", "aluminum", "aluminium", "steel", "resin", "chemical",
-                "chemicals", "ingredient", "ingredients", "sqf", "haccp", "gmp"
-            ]
-            original_norm = ATSUtils.normalize_token(actual_original)
-            opt_norm = ATSUtils.normalize_token(opt_clean)
-
-            forced_narrow_term = False
-            for term in forbidden_material_terms:
-                if term in opt_norm and term not in original_norm:
-                    forced_narrow_term = True
-                    break
-
-            if forced_narrow_term:
-                continue
-
-            too_similar = False
-            for existing in valid_options:
-                if self._similarity_ratio(opt_clean, existing) >= 0.88:
-                    too_similar = True
-                    break
-            if too_similar:
-                continue
-
-            valid_options.append(opt_clean)
-
-        scored = []
-        for opt in valid_options:
-            hits = ATSUtils.find_keyword_hits(opt, target_keywords)
-            score = (len(hits), -abs(len(opt) - original_len))
-            scored.append((score, opt))
-
-        scored.sort(reverse=True)
-        ranked = [opt for _, opt in scored]
-
-        final_ranked: List[str] = []
-        for opt in ranked:
-            if any(self._similarity_ratio(opt, kept) >= 0.86 for kept in final_ranked):
-                continue
-            final_ranked.append(opt)
-
-        return final_ranked[:8]
+        repaired.sort(key=lambda x: x["line_index"])
+        return repaired
 
     def generate_suggestions(
         self,
@@ -707,280 +717,65 @@ Job description:
         job_description: str,
         ats_analysis: Dict[str, Any],
         selected_keywords: Optional[List[str]] = None,
-        line_char_limit: int = 90,
-        max_retries: int = 3,
+        line_char_limit: int = STRICT_SINGLE_LINE_MAX,
     ) -> List[Dict[str, Any]]:
         if not isinstance(lines, list) or not lines:
-            raise ValueError("No resume lines were provided.")
+            return []
 
-        target_keywords = selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)[:15]
+        target_keywords = self._dedupe_keep_order(
+            selected_keywords or self._get_keyword_pool_for_ats(ats_analysis)
+        )
 
-        candidate_lines: List[Dict[str, Any]] = []
-        for line in lines:
-            if not isinstance(line, dict):
-                continue
-            text = (line.get("text") or "").strip()
-            if not text:
-                continue
-            if self._is_heading_like(text):
-                continue
-            if len(text) < 8:
-                continue
-            if "index" not in line or "char_count" not in line:
-                continue
-            candidate_lines.append(line)
-
-        if not candidate_lines:
-            raise ValueError("No valid resume lines available for suggestion generation.")
-
-        line_map = {
-            line["index"]: {
-                "text": line["text"],
-                "char_count": line["char_count"],
-                "char_budget": self._compute_char_budget(line["char_count"], line_char_limit),
-                "section_hint": line.get("section_hint", "general"),
-            }
-            for line in candidate_lines
+        line_lookup = {
+            int(line["index"]): line
+            for line in lines
+            if isinstance(line, dict) and isinstance(line.get("index"), int)
         }
 
-        all_cleaned: List[Dict[str, Any]] = []
-
-        batched_lines = [candidate_lines[i:i + 8] for i in range(0, len(candidate_lines), 8)]
-
-        for batch in batched_lines:
-            prompt = self._build_suggestion_prompt(
-                lines=batch,
-                job_description=job_description,
-                ats_analysis=ats_analysis,
-                target_keywords=target_keywords,
-                line_char_limit=line_char_limit,
-            )
-
-            parsed = None
-
-            for attempt in range(max_retries):
-                try:
-                    raw = self._call(prompt, temperature=0.45, max_output_tokens=4200)
-                    parsed = self._extract_json(raw)
-                    if not isinstance(parsed, list):
-                        raise ValueError(f"Expected a JSON array but got: {type(parsed).__name__}")
-                    break
-                except Exception:
-                    if attempt < max_retries - 1:
-                        time.sleep(1.2)
-
-            if parsed is None:
-                continue
-
-            for item in parsed:
-                if not isinstance(item, dict):
-                    continue
-
-                line_index = item.get("line_index")
-                original = item.get("original")
-                options = item.get("options")
-                reason = item.get("reason", "")
-                keywords_added = item.get("keywords_added", [])
-
-                if not isinstance(line_index, int) or line_index not in line_map:
-                    continue
-
-                if not isinstance(original, str):
-                    continue
-
-                if not isinstance(options, list) or len(options) < 2:
-                    continue
-
-                actual_original = line_map[line_index]["text"]
-                original_len = len(actual_original)
-                char_budget = line_map[line_index]["char_budget"]
-
-                if ATSUtils.normalize_compare_text(original) != ATSUtils.normalize_compare_text(actual_original):
-                    continue
-
-                cleaned_options = self._clean_options_for_line(
-                    actual_original=actual_original,
-                    options=options,
-                    char_budget=char_budget,
-                    target_keywords=target_keywords,
-                    original_len=original_len,
-                )
-
-                if len(cleaned_options) < 2:
-                    continue
-
-                if not isinstance(reason, str):
-                    reason = ""
-
-                if not isinstance(keywords_added, list):
-                    keywords_added = []
-
-                keywords_added = [
-                    kw.strip()
-                    for kw in keywords_added
-                    if isinstance(kw, str) and kw.strip()
-                ]
-                keywords_added = self._dedupe_keep_order(keywords_added)
-
-                option_keyword_hits: List[str] = []
-                for opt in cleaned_options:
-                    option_keyword_hits.extend(ATSUtils.find_keyword_hits(opt, target_keywords))
-                option_keyword_hits = self._dedupe_keep_order(option_keyword_hits)
-
-                if not keywords_added:
-                    keywords_added = option_keyword_hits
-
-                all_cleaned.append(
-                    {
-                        "line_index": line_index,
-                        "original": actual_original,
-                        "options": cleaned_options,
-                        "reason": reason.strip(),
-                        "keywords_added": keywords_added,
-                        "char_budget": char_budget,
-                    }
-                )
-
-        merged_by_line: Dict[int, Dict[str, Any]] = {}
-        for item in all_cleaned:
-            li = item["line_index"]
-            if li not in merged_by_line:
-                merged_by_line[li] = item
-                continue
-
-            existing = merged_by_line[li]
-            combined_options = existing["options"] + item["options"]
-
-            deduped_options: List[str] = []
-            for opt in combined_options:
-                if any(self._similarity_ratio(opt, kept) >= 0.86 for kept in deduped_options):
-                    continue
-                deduped_options.append(opt)
-
-            existing["options"] = deduped_options[:8]
-
-            merged_keywords = existing.get("keywords_added", []) + item.get("keywords_added", [])
-            existing["keywords_added"] = self._dedupe_keep_order(merged_keywords)
-
-            if len(item.get("reason", "")) > len(existing.get("reason", "")):
-                existing["reason"] = item["reason"]
-
-        retry_candidates = []
-        for line in candidate_lines:
-            li = line["index"]
-            current = merged_by_line.get(li)
-            if current is None or len(current.get("options", [])) < 4:
-                retry_candidates.append(line)
-
-        for line in retry_candidates[:12]:
-            existing_options = merged_by_line.get(line["index"], {}).get("options", [])
-
-            prompt = self._build_single_line_prompt(
-                line=line,
-                job_description=job_description,
-                ats_analysis=ats_analysis,
-                target_keywords=target_keywords,
-                line_char_limit=line_char_limit,
-                existing_options=existing_options,
-            )
-
-            parsed = None
-            for attempt in range(2):
-                try:
-                    raw = self._call(prompt, temperature=0.55, max_output_tokens=1800)
-                    parsed = self._extract_json(raw)
-                    if not isinstance(parsed, dict):
-                        raise ValueError("Expected single-line retry JSON object.")
-                    break
-                except Exception:
-                    if attempt < 1:
-                        time.sleep(1.0)
-
-            if not parsed:
-                continue
-
-            if parsed.get("line_index") != line["index"]:
-                continue
-
-            actual_original = line["text"]
-            if ATSUtils.normalize_compare_text(parsed.get("original", "")) != ATSUtils.normalize_compare_text(actual_original):
-                continue
-
-            new_options = parsed.get("options", [])
-            if not isinstance(new_options, list):
-                continue
-
-            char_budget = self._compute_char_budget(line["char_count"], line_char_limit)
-            cleaned_retry_options = self._clean_options_for_line(
-                actual_original=actual_original,
-                options=new_options,
-                char_budget=char_budget,
-                target_keywords=target_keywords,
-                original_len=len(actual_original),
-            )
-
-            if len(cleaned_retry_options) < 2:
-                continue
-
-            reason = parsed.get("reason", "")
-            if not isinstance(reason, str):
-                reason = ""
-
-            keywords_added = parsed.get("keywords_added", [])
-            if not isinstance(keywords_added, list):
-                keywords_added = []
-            keywords_added = self._dedupe_keep_order(
-                [kw.strip() for kw in keywords_added if isinstance(kw, str) and kw.strip()]
-            )
-
-            if line["index"] not in merged_by_line:
-                merged_by_line[line["index"]] = {
-                    "line_index": line["index"],
-                    "original": actual_original,
-                    "options": cleaned_retry_options[:8],
-                    "reason": reason.strip(),
-                    "keywords_added": keywords_added,
-                    "char_budget": char_budget,
-                }
-            else:
-                existing = merged_by_line[line["index"]]
-                combined = existing["options"] + cleaned_retry_options
-                deduped: List[str] = []
-                for opt in combined:
-                    if any(self._similarity_ratio(opt, kept) >= 0.86 for kept in deduped):
-                        continue
-                    deduped.append(opt)
-                existing["options"] = deduped[:8]
-                existing["keywords_added"] = self._dedupe_keep_order(
-                    existing.get("keywords_added", []) + keywords_added
-                )
-                if len(reason.strip()) > len(existing.get("reason", "")):
-                    existing["reason"] = reason.strip()
-
-        final_results = list(merged_by_line.values())
-
-        def line_score(item: Dict[str, Any]):
-            kw_score = len(item.get("keywords_added", []))
-            opt_score = len(item.get("options", []))
-            return (-kw_score, -opt_score, item["line_index"])
-
-        final_results = [x for x in final_results if len(x.get("options", [])) >= 2]
-        final_results.sort(key=line_score)
-
-        if not final_results:
-            raise ValueError("Model returned responses, but no valid suggestions survived validation.")
-
-        return final_results
-
-
-def extract_lines_with_counts(resume_text: str) -> List[Dict[str, Any]]:
-    lines = []
-    for idx, line in enumerate(resume_text.splitlines()):
-        lines.append(
-            {
-                "index": idx,
-                "text": line,
-                "char_count": len(line),
-            }
+        prompt = self._build_suggestion_prompt(
+            lines=lines,
+            job_description=job_description,
+            ats_analysis=ats_analysis,
+            target_keywords=target_keywords,
+            line_char_limit=line_char_limit,
         )
-    return lines
+
+        raw = self._call(prompt, temperature=0.4, max_output_tokens=4000)
+        parsed = self._extract_json(raw)
+
+        if not isinstance(parsed, list):
+            raise ValueError("Suggestions response must be a JSON array.")
+
+        normalized: List[Dict[str, Any]] = []
+        seen_line_indices = set()
+
+        for item in parsed:
+            fixed = self._normalize_suggestion_item(item, line_lookup, line_char_limit)
+            if fixed is None:
+                continue
+            if fixed["line_index"] in seen_line_indices:
+                continue
+            seen_line_indices.add(fixed["line_index"])
+            normalized.append(fixed)
+
+        if normalized:
+            normalized = self._repair_suggestions_if_needed(
+                suggestions=normalized,
+                lines=[line for line in lines if line["index"] not in seen_line_indices],
+                job_description=job_description,
+                ats_analysis=ats_analysis,
+                target_keywords=target_keywords,
+                line_char_limit=line_char_limit,
+            )
+        else:
+            normalized = self._repair_suggestions_if_needed(
+                suggestions=[],
+                lines=lines,
+                job_description=job_description,
+                ats_analysis=ats_analysis,
+                target_keywords=target_keywords,
+                line_char_limit=line_char_limit,
+            )
+
+        normalized.sort(key=lambda x: x["line_index"])
+        return normalized
