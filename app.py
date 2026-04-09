@@ -1,8 +1,8 @@
 import os
-import tempfile
-import subprocess
-import shutil
 import re
+import shutil
+import subprocess
+import tempfile
 
 import streamlit as st
 
@@ -717,6 +717,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # ---------------------------------------------------
 # PASSWORD GATE
 # ---------------------------------------------------
@@ -766,6 +767,7 @@ def check_password():
 if not check_password():
     st.stop()
 
+
 # ---------------------------------------------------
 # AFTER AUTH
 # ---------------------------------------------------
@@ -785,11 +787,21 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # ---------------------------------------------------
 # REMAINING IMPORTS
 # ---------------------------------------------------
 from resume_processor import ResumeProcessor
 from gemini_client import GeminiClient
+
+
+# ---------------------------------------------------
+# CONSTANTS
+# ---------------------------------------------------
+STRICT_SINGLE_LINE_THRESHOLD = 100
+STRICT_SINGLE_LINE_MAX = 90
+STRICT_DOUBLE_LINE_MAX = 180
+
 
 # ---------------------------------------------------
 # HELPERS
@@ -955,6 +967,12 @@ def is_project_title_like(text: str) -> bool:
     return False
 
 
+def get_line_budget(original_len: int) -> int:
+    if original_len <= STRICT_SINGLE_LINE_THRESHOLD:
+        return STRICT_SINGLE_LINE_MAX
+    return STRICT_DOUBLE_LINE_MAX
+
+
 SOFFICE_AVAILABLE = shutil.which("soffice") is not None
 
 try:
@@ -964,6 +982,7 @@ except Exception:
     st.stop()
 
 client = GeminiClient(GEMINI_API_KEY)
+
 
 # ---------------------------------------------------
 # SESSION STATE DEFAULTS
@@ -980,12 +999,13 @@ defaults = {
     "_loading_stage": None,
     "_loading_pct": 0,
     "line_edits": {},
-    "line_char_limit": 90,
+    "line_char_limit": STRICT_SINGLE_LINE_MAX,
     "ready_for_manual_edit": False,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
 
 # ---------------------------------------------------
 # LOADING BAR HELPER
@@ -1005,6 +1025,7 @@ def render_loading_bar(label, pct):
 """,
         unsafe_allow_html=True,
     )
+
 
 # ---------------------------------------------------
 # TOP BAR
@@ -1029,6 +1050,7 @@ st.markdown(
 """,
     unsafe_allow_html=True,
 )
+
 
 # ---------------------------------------------------
 # HERO
@@ -1066,6 +1088,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # ---------------------------------------------------
 # WORKFLOW PROGRESS
 # ---------------------------------------------------
@@ -1081,6 +1104,7 @@ if st.session_state.ready_for_manual_edit:
 
 labels = ["Upload", "ATS Analysis", "Suggestions", "Edit & Export"]
 render_loading_bar(f"Workflow — {labels[min(steps, 3)]}", int(steps / 4 * 100))
+
 
 # ---------------------------------------------------
 # STEP 1 — INPUTS
@@ -1157,8 +1181,9 @@ if st.session_state.resume_processor is not None:
     with st.expander("Preview extracted resume lines"):
         for line in st.session_state.resume_processor.get_all_lines():
             if line["text"].strip():
-                st.write(f'**[{line["index"]}]** · {line["char_count"]} chars')
+                st.write(f'**[{line["index"]}]** · {line["char_count"]} chars · budget {get_line_budget(line["char_count"])}')
                 st.code(line["text"])
+
 
 # ---------------------------------------------------
 # STEP 2 — ATS
@@ -1219,35 +1244,22 @@ if st.session_state.ats_analysis:
         st.markdown(f'<div class="req-item">→ {req}</div>', unsafe_allow_html=True)
 
     st.markdown("### Formatting Control")
-    preset_col, slider_col = st.columns([1, 2], gap="large")
+    line_mode = st.selectbox(
+        "Sentence length mode",
+        ["Strict 90 / 180"],
+        index=0,
+        help=(
+            "Original lines with 100 or fewer characters rewrite to 90 or fewer. "
+            "Original lines longer than 100 characters can rewrite to 180 or fewer."
+        ),
+    )
 
-    with preset_col:
-        char_preset = st.selectbox(
-            "Preset",
-            ["Compact", "Balanced", "Relaxed"],
-            index=1,
-            help="A quick way to set your target characters per visual line.",
-        )
-
-    preset_map = {"Compact": 80, "Balanced": 90, "Relaxed": 100}
-    default_slider_value = st.session_state.get("line_char_limit", preset_map[char_preset])
-
-    with slider_col:
-        line_char_limit = st.slider(
-            "Target characters per visual line",
-            min_value=60,
-            max_value=130,
-            value=default_slider_value if default_slider_value in range(60, 131) else preset_map[char_preset],
-            step=5,
-            help="If an original bullet fits within this limit, AI keeps it within one line. If the original bullet exceeds this limit, AI can use up to two lines.",
-        )
-
-    if st.session_state.get("line_char_limit") != line_char_limit:
-        st.session_state.line_char_limit = line_char_limit
+    st.session_state.line_char_limit = STRICT_SINGLE_LINE_MAX
 
     st.caption(
-        f"Current rule: bullets up to {st.session_state.line_char_limit} chars are treated as one-line bullets. "
-        f"Longer bullets can use up to {st.session_state.line_char_limit * 2} chars."
+        "Current rule: original lines with 100 or fewer characters are rewritten to 90 or fewer. "
+        "Original lines longer than 100 characters can rewrite to 180 or fewer. "
+        "One line replaces one line; do not merge or split lines."
     )
 
     gen_c1, _ = st.columns([1, 4], gap="large")
@@ -1327,6 +1339,7 @@ if st.session_state.ats_analysis:
 
                 except Exception as e:
                     st.error(f"Generation failed: {e}")
+
 
 # ---------------------------------------------------
 # STEP 3 — SUGGESTIONS
@@ -1418,6 +1431,7 @@ if st.session_state.suggestions:
                 except Exception as e:
                     st.error(f"Failed to apply changes: {e}")
 
+
 # ---------------------------------------------------
 # STEP 4 — INLINE EDITOR + EXPORT
 # ---------------------------------------------------
@@ -1487,6 +1501,7 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
                     label_visibility="collapsed",
                 )
                 st.session_state.line_edits[idx] = new_val
+                st.caption(f"Current length: {len(new_val)} · suggested max: {get_line_budget(len(l['text']))}")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1637,17 +1652,11 @@ if st.session_state.resume_processor is not None and st.session_state.ready_for_
      style="display:flex;align-items:center;justify-content:center;gap:0.5rem;
             padding:0.7rem 1rem;border-radius:12px;
             background:linear-gradient(135deg,#3a74f0,#5d95ff);color:#fff;
-            font-size:0.88rem;font-weight:700;text-decoration:none;
-            box-shadow:0 6px 18px rgba(79,139,255,0.32);transition:all 0.15s;">
-    Open Google Drive Upload ↗
+            font-size:0.88rem;font-weight:700;text-decoration:none;">
+     ↗ Open Google Drive Upload
   </a>
 </div>
 """
         st.markdown(gdocs_html, unsafe_allow_html=True)
 
-    render_loading_bar("All done — resume tailored ✦", 100)
-
-st.markdown(
-    '<div class="footer-note">Rizzume ✦ — review suggestions, edit the updated resume, then export cleanly.</div>',
-    unsafe_allow_html=True,
-)
+st.markdown('<div class="footer-note">Built for strict line-safe resume tailoring ✦</div>', unsafe_allow_html=True)
